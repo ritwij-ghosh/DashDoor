@@ -23,7 +23,17 @@
       "Bash(git stash *)",
       "Bash(git rebase *)",
       "Bash(git fetch *)",
-      "Bash(GIT_EDITOR=true git rebase *)"
+      "Bash(GIT_EDITOR=true git rebase *)",
+      "Bash(flutter analyze *)",
+      "Bash(python3 -c \"from dotenv import dotenv_values; c=dotenv_values\\('.env'\\); print\\('Keys present:', [k for k,v in c.items\\(\\) if v and 'your_' not in v]\\)\")",
+      "Bash(uvicorn app.main:app --port 8001 --log-level warning)",
+      "Bash(curl -s http://localhost:8001/health)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('access_token','ERROR:'+str\\(d\\)\\)[:80]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('access_token:', str\\(d.get\\('access_token',''\\)\\)[:60] or 'NONE', '| error:', d.get\\('error','none'\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.items\\(\\) if k not in \\('access_token','refresh_token'\\)}, indent=2\\)[:600]\\)\")",
+      "Bash(python3 *)",
+      "Bash(curl -s https://ntnynuorqvwyoomebrgy.supabase.co/auth/v1/.well-known/jwks.json)",
+      "Bash(pkill -f \"uvicorn app.main\")"
     ]
   }
 }
