@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Bash(pip install *)",
+      "Bash(python -c \"from app.main import app; print\\('OK — app loaded'\\)\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK — app loaded, routes:', [r.path for r in app.routes]\\)\")",
+      "Bash(python -c \"import fastapi; print\\(fastapi.__version__\\)\")",
+      "Bash(python3 -c \"import fastapi; print\\(fastapi.__version__\\)\")",
+      "Bash(conda run *)",
+      "Bash(/c/Users/rithw/miniconda3/python.exe -c \"import fastapi; print\\('fastapi OK'\\)\")",
+      "Bash(/c/Users/rithw/miniconda3/Scripts/python.exe -c \"import fastapi; print\\('fastapi OK'\\)\")",
+      "Bash(/c/Users/rithw/miniconda3/Scripts/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK — routes:', [r.path for r in app.routes]\\)\")",
+      "Read(//c/Users/rithw/miniconda3/**)",
+      "Bash(/c/Users/rithw/miniconda3/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK routes:', [r.path for r in app.routes]\\)\")"
+    ]
+  }
+}
