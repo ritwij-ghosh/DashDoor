@@ -1,53 +1,45 @@
-from fastapi import APIRouter, Depends
+"""Google Calendar router.
 
-from app.routers.auth import get_current_user_id
-from app.database import get_supabase
-from app.services.calendar_service import fetch_events_for_entity, get_oauth_url_for_entity
+During demo/dev we use a single pre-linked Composio entity
+(`DEMO_ENTITY_ID`), so these routes do not require Supabase auth. The
+Flutter app can poll `/calendar/status` and pull `/calendar/events`
+without a session token.
+"""
+from fastapi import APIRouter
+
+from app.services.calendar_service import (
+    entity_id_for,
+    fetch_events_for_entity,
+    get_oauth_url_for_entity,
+    is_entity_connected,
+)
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
 
 @router.get("/connect")
-async def connect_calendar(user_id: str = Depends(get_current_user_id)) -> dict:
-    db = get_supabase()
-    entity_id = f"user_{user_id}"
-    result = get_oauth_url_for_entity(entity_id)
-    db.table("profiles").update({"composio_entity_id": entity_id}).eq("id", user_id).execute()
-    return result
+async def connect_calendar() -> dict:
+    return get_oauth_url_for_entity(entity_id_for())
 
 
 @router.get("/status")
-async def calendar_status(user_id: str = Depends(get_current_user_id)) -> dict:
-    db = get_supabase()
-    res = db.table("profiles").select("calendar_connected").eq("id", user_id).maybe_single().execute()
-    connected = (res.data or {}).get("calendar_connected", False)
-    return {"connected": connected}
+async def calendar_status() -> dict:
+    return {"connected": is_entity_connected(entity_id_for())}
 
 
 @router.get("/callback")
-async def calendar_callback(user_id: str = Depends(get_current_user_id)) -> dict:
-    db = get_supabase()
-    db.table("profiles").update({"calendar_connected": True}).eq("id", user_id).execute()
-    return {"message": "Google Calendar connected successfully"}
+async def calendar_callback() -> dict:
+    # Composio manages the OAuth callback. This is kept for backwards
+    # compatibility but the real source of truth is `is_entity_connected`.
+    return {
+        "message": "Google Calendar connected successfully",
+        "connected": is_entity_connected(entity_id_for()),
+    }
 
 
 @router.get("/events")
-async def get_events(
-    hours: int = 12,
-    user_id: str = Depends(get_current_user_id),
-) -> list[dict]:
-    db = get_supabase()
-    res = (
-        db.table("profiles")
-        .select("composio_entity_id,calendar_connected")
-        .eq("id", user_id)
-        .maybe_single()
-        .execute()
-    )
-    data = res.data or {}
-    if not data.get("calendar_connected"):
-        return []
-    entity_id = data.get("composio_entity_id")
-    if not entity_id:
+async def get_events(hours: int = 12) -> list[dict]:
+    entity_id = entity_id_for()
+    if not is_entity_connected(entity_id):
         return []
     return fetch_events_for_entity(entity_id, hours)

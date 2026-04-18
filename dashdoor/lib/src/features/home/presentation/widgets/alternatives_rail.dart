@@ -21,6 +21,7 @@ class AlternativesRail extends ConsumerWidget {
       height: 260,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 2),
         itemCount: message.options.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -57,110 +58,143 @@ class _AlternativeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = context.appText;
-    return Container(
+    // Parent rail is exactly 260px tall; intrinsic Column content was ~288px.
+    // Fixed height + Expanded headline region prevents overflow at any text scale.
+    const railH = 260.0;
+    const imageH = 96.0;
+
+    return SizedBox(
       width: 236,
-      decoration: BoxDecoration(
-        color: AppPalette.surfaceWhite,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppPalette.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.deepNavy.withValues(alpha: 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: onPreview,
-              child: SizedBox(
-                height: 110,
-                child: FoodArtwork(suggestion: option, radius: 0),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _miniBadge(
-                        '${option.nutrition.calories} cal',
-                        AppPalette.neutral100,
-                      ),
-                      const SizedBox(width: 6),
-                      _miniBadge(
-                        '${option.nutrition.protein}g protein',
-                        AppPalette.primary.withValues(alpha: 0.12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    option.restaurant,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.bodyStrong.copyWith(fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    option.headline,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.small.copyWith(color: AppPalette.neutral500),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: onPreview,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            side: const BorderSide(color: AppPalette.border),
-                            foregroundColor: AppPalette.deepNavy,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Preview',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: onPick,
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            backgroundColor: AppPalette.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Pick',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      height: railH,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppPalette.surfaceWhite,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppPalette.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppPalette.deepNavy.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: onPreview,
+                child: SizedBox(
+                  height: imageH,
+                  child: FoodArtwork(suggestion: option, radius: 0),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: _miniBadge(
+                              '${option.nutrition.calories} cal',
+                              AppPalette.neutral100,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: _miniBadge(
+                              '${option.nutrition.protein}g protein',
+                              AppPalette.primary.withValues(alpha: 0.12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        option.restaurant,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: text.bodyStrong
+                            .copyWith(fontWeight: FontWeight.w900, fontSize: 15),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            option.headline,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: text.small.copyWith(
+                              color: AppPalette.neutral500,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: onPreview,
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                minimumSize: const Size(0, 36),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                side: const BorderSide(color: AppPalette.border),
+                                foregroundColor: AppPalette.deepNavy,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Preview',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: onPick,
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                minimumSize: const Size(0, 36),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                backgroundColor: AppPalette.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Pick',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

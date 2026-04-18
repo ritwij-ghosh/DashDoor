@@ -4,18 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/storage/anonymous_user_id.dart';
-import '../data/calendar_backend_client.dart';
-
-final calendarBackendClientProvider = Provider<CalendarBackendClient>((ref) {
-  final client = CalendarBackendClient();
-  ref.onDispose(client.close);
-  return client;
-});
-
-final anonymousUserIdProvider = FutureProvider<String>((ref) {
-  return AnonymousUserId.getOrCreate();
-});
+import '../../../core/services/api_service.dart';
 
 enum CalendarLinkPhase {
   idle,
@@ -30,33 +19,36 @@ enum CalendarLinkPhase {
 class CalendarConnectionState {
   const CalendarConnectionState({
     this.phase = CalendarLinkPhase.idle,
-    this.connectedAccountId,
+    this.oauthUrl,
     this.errorMessage,
   });
 
   final CalendarLinkPhase phase;
-  final String? connectedAccountId;
+  final String? oauthUrl;
   final String? errorMessage;
 
   bool get isConnected => phase == CalendarLinkPhase.connected;
 
   CalendarConnectionState copyWith({
     CalendarLinkPhase? phase,
-    String? connectedAccountId,
+    String? oauthUrl,
     String? errorMessage,
   }) {
     return CalendarConnectionState(
       phase: phase ?? this.phase,
-      connectedAccountId: connectedAccountId ?? this.connectedAccountId,
+      oauthUrl: oauthUrl ?? this.oauthUrl,
       errorMessage: errorMessage,
     );
   }
 }
 
+/// Talks to the Python/FastAPI backend (`/api/v1/calendar/*`), which uses
+/// Composio under the hood. Auth is carried by the Supabase JWT attached
+/// inside [ApiService], so the user must be signed in before linking.
 class CalendarConnection extends Notifier<CalendarConnectionState> {
   Timer? _pollTimer;
   int _pollTicks = 0;
-  static const _maxPollTicks = 60;
+  static const _maxPollTicks = 60; // ~2 min at 2s cadence
 
   @override
   CalendarConnectionState build() {
@@ -68,23 +60,19 @@ class CalendarConnection extends Notifier<CalendarConnectionState> {
   }
 
   Future<void> refreshStatus() async {
-    final userId = await ref.read(anonymousUserIdProvider.future);
-    final client = ref.read(calendarBackendClientProvider);
     try {
-      final s = await client.getGoogleCalendarStatus(userId);
-      if (s.connected) {
-        state = CalendarConnectionState(
+      final connected = await ApiService.getCalendarStatus();
+      if (connected) {
+        state = const CalendarConnectionState(
           phase: CalendarLinkPhase.connected,
-          connectedAccountId: s.connectedAccountId,
         );
-      } else {
-        state = state.copyWith(
-          phase: CalendarLinkPhase.idle,
-          connectedAccountId: s.connectedAccountId,
-        );
+      } else if (state.phase != CalendarLinkPhase.polling &&
+          state.phase != CalendarLinkPhase.openingBrowser &&
+          state.phase != CalendarLinkPhase.loading) {
+        state = state.copyWith(phase: CalendarLinkPhase.idle);
       }
     } catch (e) {
-      // Offline / server down — keep local phase; do not flip to error on refresh.
+      // Offline / backend down / not signed in — don't clobber active flows.
       debugPrint('Calendar status refresh failed: $e');
     }
   }
@@ -96,32 +84,42 @@ class CalendarConnection extends Notifier<CalendarConnectionState> {
       return;
     }
 
-    state = CalendarConnectionState(
-      phase: CalendarLinkPhase.loading,
-      connectedAccountId: state.connectedAccountId,
-    );
-
-    final userId = await ref.read(anonymousUserIdProvider.future);
-    final client = ref.read(calendarBackendClientProvider);
+    state = const CalendarConnectionState(phase: CalendarLinkPhase.loading);
 
     try {
-      final link = await client.requestGoogleCalendarLink(userId);
-      state = state.copyWith(phase: CalendarLinkPhase.openingBrowser);
-
-      final uri = Uri.parse(link.redirectUrl);
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        state = const CalendarConnectionState(
+      final data = await ApiService.connectCalendar();
+      final url = data['oauth_url'] as String?;
+      final err = data['error'] as String?;
+      if (url == null || url.isEmpty) {
+        state = CalendarConnectionState(
           phase: CalendarLinkPhase.error,
-          errorMessage: 'Could not open the browser for Google sign-in.',
+          errorMessage: err?.isNotEmpty == true
+              ? err
+              : 'Backend returned no OAuth URL.',
         );
         return;
       }
 
-      _startPolling(userId);
+      state = CalendarConnectionState(
+        phase: CalendarLinkPhase.openingBrowser,
+        oauthUrl: url,
+      );
+
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        state = CalendarConnectionState(
+          phase: CalendarLinkPhase.error,
+          oauthUrl: url,
+          errorMessage:
+              'Could not open the browser. Copy this URL manually:\n$url',
+        );
+        return;
+      }
+
+      _startPolling();
     } catch (e) {
       state = CalendarConnectionState(
         phase: CalendarLinkPhase.error,
@@ -130,12 +128,11 @@ class CalendarConnection extends Notifier<CalendarConnectionState> {
     }
   }
 
-  void _startPolling(String userId) {
+  void _startPolling() {
     _pollTimer?.cancel();
     _pollTicks = 0;
     state = state.copyWith(phase: CalendarLinkPhase.polling);
 
-    final client = ref.read(calendarBackendClientProvider);
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       _pollTicks++;
       if (_pollTicks > _maxPollTicks) {
@@ -143,18 +140,17 @@ class CalendarConnection extends Notifier<CalendarConnectionState> {
         state = state.copyWith(
           phase: CalendarLinkPhase.error,
           errorMessage:
-              'Still waiting for Google Calendar. Return here after finishing in the browser, or try again.',
+              'Still waiting for Google. Finish in the browser and tap Connect again.',
         );
         return;
       }
 
       try {
-        final s = await client.getGoogleCalendarStatus(userId);
-        if (s.connected) {
+        final connected = await ApiService.getCalendarStatus();
+        if (connected) {
           timer.cancel();
-          state = CalendarConnectionState(
+          state = const CalendarConnectionState(
             phase: CalendarLinkPhase.connected,
-            connectedAccountId: s.connectedAccountId,
           );
         }
       } catch (e) {
@@ -164,11 +160,9 @@ class CalendarConnection extends Notifier<CalendarConnectionState> {
   }
 
   String _humanMessage(Object e) {
-    if (e is CalendarBackendException) {
-      if (e.statusCode == 404 || e.statusCode == 501) {
-        return 'Calendar linking is not available yet. You can skip and connect later.';
-      }
-      return e.message;
+    final s = e.toString();
+    if (s.contains('Failed to get OAuth URL')) {
+      return 'Calendar linking unavailable — check that you are signed in and that the backend has a Composio API key configured.';
     }
     return 'Something went wrong. Check your connection and try again.';
   }

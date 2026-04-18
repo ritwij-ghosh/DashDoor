@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../integrations/state/calendar_connection_provider.dart';
 
 class AppSidebar extends ConsumerStatefulWidget {
   const AppSidebar({super.key});
@@ -85,6 +87,16 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the sidebar integration tile in sync once Composio polling flips
+    // the provider to `connected`.
+    ref.listen<CalendarConnectionState>(calendarConnectionProvider, (prev, next) {
+      final wasConnected = prev?.isConnected ?? false;
+      if (next.isConnected && !wasConnected) {
+        if (mounted) setState(() => _calendarConnected = true);
+        _load();
+      }
+    });
+
     final user = Supabase.instance.client.auth.currentUser;
     final name = _profile['name'] as String? ??
         user?.email?.split('@').first ??
@@ -226,29 +238,31 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       );
       return;
     }
-    try {
-      final data = await ApiService.connectCalendar();
-      final url = data['oauth_url'] as String?;
-      if (url != null && ctx.mounted) {
-        await showDialog(
-          context: ctx,
-          builder: (c) => AlertDialog(
-            title: const Text('Connect Google Calendar'),
-            content: SelectableText(
-              'Open this URL in your browser to authorize:\n\n$url',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(c),
-                child: const Text('Done'),
-              ),
-            ],
+    HapticFeedback.mediumImpact();
+    final notifier = ref.read(calendarConnectionProvider.notifier);
+    // Fire the Composio OAuth flow: backend returns the URL, notifier
+    // launches the browser, and polls /calendar/status until ACTIVE.
+    await notifier.startLinkFlow();
+
+    if (!ctx.mounted) return;
+    final st = ref.read(calendarConnectionProvider);
+    if (st.phase == CalendarLinkPhase.error && st.errorMessage != null) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(st.errorMessage!),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } else if (st.phase == CalendarLinkPhase.polling) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Finish sign-in in your browser — we\'ll detect it automatically.',
           ),
-        );
-        // Reload to pick up connection status
-        _load();
-      }
-    } catch (_) {}
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   Future<void> _setLocation(BuildContext ctx) async {

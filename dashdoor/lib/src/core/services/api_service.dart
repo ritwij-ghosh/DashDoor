@@ -14,6 +14,9 @@ class ApiService {
   static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         if (_token != null) 'Authorization': 'Bearer $_token',
+        // ngrok-free injects an HTML warning page on browser-like requests.
+        // This header is harmless on non-ngrok backends and required on ngrok.
+        if (AppConfig.isNgrok) 'ngrok-skip-browser-warning': 'true',
       };
 
   // ── Chat ────────────────────────────────────────────────────────────
@@ -134,6 +137,15 @@ class ApiService {
     );
     if (res.statusCode != 200) return false;
     return (jsonDecode(res.body) as Map<String, dynamic>)['connected'] as bool? ?? false;
+  }
+
+  static Future<List<Map<String, dynamic>>> getCalendarEvents({int hours = 48}) async {
+    final res = await http.get(
+      Uri.parse('$_base/api/v1/calendar/events?hours=$hours'),
+      headers: _headers,
+    );
+    if (res.statusCode != 200) return [];
+    return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
   }
 
   // ── Location ─────────────────────────────────────────────────────────
