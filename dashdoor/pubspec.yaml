@@ -1,0 +1,61 @@
+name: dashdoor
+description: "DashDoor Flutter app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  lottie: ^3.3.1
+  video_player: ^2.9.2
+  purchases_flutter: ^9.11.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Lato
+      fonts:
+        - asset: fonts/Lato-Thin.ttf
+          weight: 100
+        - asset: fonts/Lato-ThinItalic.ttf
+          weight: 100
+          style: italic
+        - asset: fonts/Lato-Light.ttf
+          weight: 300
+        - asset: fonts/Lato-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: fonts/Lato-Regular.ttf
+          weight: 400
+        - asset: fonts/Lato-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: fonts/Lato-Bold.ttf
+          weight: 700
+        - asset: fonts/Lato-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: fonts/Lato-Black.ttf
+          weight: 900
+        - asset: fonts/Lato-BlackItalic.ttf
+          weight: 900
+          style: italic
+
+  assets:
+    - assets/mascots/
+    - assets/backgrounds/
+    - assets/images/
+    - assets/animations/
