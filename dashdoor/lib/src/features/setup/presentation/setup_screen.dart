@@ -69,12 +69,12 @@ class _CalibrateStep extends ConsumerWidget {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     final vibes = [
-      ('Healthy', '🥗'),
-      ('Asian', '🍜'),
-      ('Comfort', '🍝'),
+      ('High protein', '💪'),
+      ('Fresh / light', '🥗'),
+      ('Comfort', '🍜'),
       ('Spicy', '🌶️'),
-      ('Italian', '🍕'),
-      ('Mexican', '🌮'),
+      ('Local gems', '📍'),
+      ('Travel mode', '✈️'),
     ];
 
     return Stack(
@@ -129,7 +129,7 @@ class _CalibrateStep extends ConsumerWidget {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                "Tell us what you like — we'll handle the decisions.",
+                                "Bias orders & templates — we’ll match the chaos of your week.",
                                 style: context.appText.body.copyWith(
                                   color: AppPalette.neutral500,
                                   fontSize: 15,
@@ -156,7 +156,7 @@ class _CalibrateStep extends ConsumerWidget {
                             color: AppPalette.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'How much time do you have?',
+                          'How long is a realistic meal slot?',
                           style: context.appText.bodyStrong.copyWith(
                             fontSize: 17,
                             color: AppPalette.deepNavy,
@@ -169,8 +169,8 @@ class _CalibrateStep extends ConsumerWidget {
                     // ── Three large time cards ───────────
                     _TimeCard(
                       minutes: '15',
-                      title: 'Quick & Easy',
-                      subtitle: 'Lightning-fast meals for busy nights',
+                      title: 'Grab & go',
+                      subtitle: 'Between meetings or at the airport',
                       mascotState: MascotState.happy,
                       accentColor: const Color(0xFFFF6B6B),
                       gradientColors: const [
@@ -186,8 +186,8 @@ class _CalibrateStep extends ConsumerWidget {
                     const SizedBox(height: 12),
                     _TimeCard(
                       minutes: '30',
-                      title: 'Weeknight Classic',
-                      subtitle: 'The sweet spot — flavorful & doable',
+                      title: 'Sit-down window',
+                      subtitle: 'Enough time to order or eat without rushing',
                       mascotState: MascotState.chef,
                       accentColor: AppPalette.sunRewards,
                       gradientColors: const [
@@ -203,8 +203,8 @@ class _CalibrateStep extends ConsumerWidget {
                     const SizedBox(height: 12),
                     _TimeCard(
                       minutes: '60',
-                      title: 'Slow & Savory',
-                      subtitle: 'Cooking is therapy — take your time',
+                      title: 'Long break',
+                      subtitle: 'Rare calm — we’ll suggest something worth it',
                       mascotState: MascotState.idle,
                       accentColor: AppPalette.successMint,
                       gradientColors: const [
@@ -227,7 +227,7 @@ class _CalibrateStep extends ConsumerWidget {
                             color: AppPalette.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          "What's the vibe?",
+                          "Flavor bias",
                           style: context.appText.bodyStrong.copyWith(
                             fontSize: 17,
                             color: AppPalette.deepNavy,
@@ -311,7 +311,7 @@ class _CalibrateStep extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'XP Bonus Available',
+                                  'Templates unlock here',
                                   style: context.appText.bodyStrong.copyWith(
                                     fontSize: 15,
                                     color: AppPalette.deepNavy,
@@ -319,7 +319,7 @@ class _CalibrateStep extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Complete setup to earn your first 50 XP',
+                                  'Finish setup to unlock your first saved template',
                                   style: context.appText.small.copyWith(
                                     color: AppPalette.neutral500,
                                     fontSize: 13,
@@ -393,7 +393,7 @@ class _CalibrateStep extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Start Cooking",
+                        "Continue",
                         style: context.appText.bodyStrong.copyWith(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -750,7 +750,7 @@ class _QuickStockStep extends ConsumerWidget {
                                   const Icon(Icons.local_fire_department, color: AppPalette.sunRewards, size: 18),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '+50 XP',
+                                    '+1 template',
                                     style: context.appText.smallStrong.copyWith(
                                       color: AppPalette.deepNavy,
                                     ),
@@ -771,7 +771,7 @@ class _QuickStockStep extends ConsumerWidget {
                       child: Column(
                         children: [
                           Text(
-                            'Quick-Stock Your Pantry',
+                            'Staples to bias toward',
                             textAlign: TextAlign.center,
                             style: context.appText.h1.copyWith(
                               fontSize: 28,
@@ -788,15 +788,15 @@ class _QuickStockStep extends ConsumerWidget {
                                 height: 1.4,
                               ),
                               children: [
-                                const TextSpan(text: 'Select '),
+                                const TextSpan(text: 'Pick '),
                                 TextSpan(
-                                  text: '5 ingredients',
+                                  text: '5 staples',
                                   style: TextStyle(
                                     color: AppPalette.sunRewards,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const TextSpan(text: ' to unlock your first recipe recommendation.'),
+                                const TextSpan(text: ' we can anchor suggestions and templates on.'),
                               ],
                             ),
                           ),

@@ -5,18 +5,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
-
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
 import '../../../shared/widgets/mascot_widget.dart';
 import '../../home/data/gamification_repository.dart';
+import '../../integrations/state/calendar_connection_provider.dart';
 import '../state/onboarding_state.dart';
 import 'paywall_screen.dart';
 
-/// Extended onboarding flow — character-driven steps that build investment
-/// before any paywall. The squirrel mascot guides the user throughout.
+/// Extended onboarding — priorities, calendar/travel context, and goals
+/// before paywall. Same structure as the original flow; copy is for Healthy Autopilot.
 class ExtendedOnboardingScreen extends ConsumerStatefulWidget {
   const ExtendedOnboardingScreen({super.key});
 
@@ -198,9 +197,9 @@ class _ExtendedOnboardingScreenState
         backgroundColor: const Color(0xFFFFF5F0),
         title: "We're all ears",
         subtitle:
-            "The next few questions help us understand your kitchen, "
-            "your taste, and your life — so every meal feels like it "
-            "was made just for you.",
+            "The next few questions tune your autopilot — how you eat, "
+            "how busy life gets, and where you land — so suggestions "
+            "arrive before decision fatigue does.",
         ctaLabel: "Let's do it",
         accentColor: AppPalette.primary,
         decorations: const [
@@ -250,11 +249,11 @@ class _ExtendedOnboardingScreenState
       _TransitionPage(
         onNext: _goNextPageOnly,
         backgroundColor: const Color(0xFFF0F7F4),
-        title: "Let's peek inside\nyour kitchen",
+        title: "Calendar &\ntravel context",
         subtitle:
-            "Tell us what you already have and we'll build meals "
-            "around it — less waste, less shopping, more cooking.",
-        ctaLabel: 'Open the pantry',
+            "Next we’ll capture how you eat on the ground — home, office, "
+            "and trips — so the next 8–12 hours of picks make sense.",
+        ctaLabel: 'Continue',
         accentColor: AppPalette.successMint,
         decorations: const [
           _FloatingShape(icon: Icons.kitchen_rounded, top: 0.08, right: 0.1, size: 22, color: AppPalette.successMint),
@@ -274,11 +273,10 @@ class _ExtendedOnboardingScreenState
       _TransitionPage(
         onNext: _goNextPageOnly,
         backgroundColor: const Color(0xFFF5F0FF),
-        title: 'Small promises,\nbig results',
+        title: 'Small habits,\nbig calm',
         subtitle:
-            "Consistency beats perfection. A simple commitment "
-            "to yourself is the most powerful thing you can do "
-            "for your health.",
+            "Letting something else decide what to eat — on time — "
+            "frees your brain for everything else on your plate.",
         ctaLabel: "I'm ready",
         accentColor: const Color(0xFF8B5CF6),
         decorations: const [
@@ -297,11 +295,10 @@ class _ExtendedOnboardingScreenState
       _TransitionPage(
         onNext: _goNextPageOnly,
         backgroundColor: const Color(0xFFF0FBF4),
-        title: "Your journey\nstarts now",
+        title: "Your autopilot\nis almost on",
         subtitle:
-            "Everything is set. Your buddy is excited, your plan "
-            "is ready, and your kitchen is waiting. Let's make "
-            "something amazing happen.",
+            "We’ll connect Calendar next, add travel when you have it, "
+            "and start surfacing timely meals and one-tap orders.",
         ctaLabel: "Let's go",
         accentColor: AppPalette.successMint,
         isLastTransition: true,
@@ -686,22 +683,11 @@ class _TransitionPageState extends State<_TransitionPage>
                       offset: Offset(0, 30 * (1 - t)),
                       child: Opacity(
                         opacity: t,
-                        child: SizedBox(
+                        child: const MascotWidget(
+                          state: MascotState.happy,
                           width: 140,
                           height: 140,
-                          child: Transform.translate(
-                            offset: const Offset(7.5, 0),
-                            child: Lottie.asset(
-                              'assets/animations/excited_idle_animation.json',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  const MascotWidget(
-                                state: MascotState.happy,
-                                width: 140,
-                                height: 140,
-                              ),
-                            ),
-                          ),
+                          animate: false,
                         ),
                       ),
                     );
@@ -876,11 +862,11 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
         'adventurous': '\uD83C\uDF0D',
       };
       final vibeLabel = {
-        'quick': 'Quick & easy',
-        'cheap': 'Budget-friendly',
-        'healthGoals': 'Health-focused',
-        'comfort': 'Comfort food',
-        'adventurous': 'Adventurous',
+        'quick': 'Chaotic calendar',
+        'cheap': 'Budget-smart',
+        'healthGoals': 'Health & energy',
+        'comfort': 'Reliable favorites',
+        'adventurous': 'Travel & new spots',
       };
       for (final v in data.mealVibes) {
         chips.add(_StoryChip(
@@ -895,7 +881,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
     if (data.timeAvailableMin != null) {
       chips.add(_StoryChip(
         emoji: '\u23F1',
-        label: '${data.timeAvailableMin} min meals',
+        label: '${data.timeAvailableMin} min to eat',
         color: const Color(0xFFEDF7F0),
         borderColor: AppPalette.successMint.withValues(alpha: 0.2),
       ));
@@ -1014,7 +1000,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
       pills.add(_StatPillData(
         value: '${data.timeAvailableMin}',
         unit: 'min',
-        label: 'Cook time',
+        label: 'Time to eat',
         icon: Icons.timer_rounded,
         iconColor: const Color(0xFF8B5CF6),
         bgColor: const Color(0xFFF3F0FF),
@@ -1062,7 +1048,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
   Widget build(BuildContext context) {
     final data = ref.watch(onboardingFlowProvider).data;
     final bottomPad = MediaQuery.of(context).padding.bottom;
-    final name = data.squirrelName ?? 'your buddy';
+    final name = data.squirrelName ?? 'Autopilot';
     final chips = _buildChips(data);
     final statPills = _buildStatPills(data);
     final hasMacros = _hasMacros;
@@ -1171,20 +1157,12 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                       width: 2,
                                     ),
                                   ),
-                                  child: ClipOval(
-                                    child: Transform.translate(
-                                      offset: const Offset(7.5, 0),
-                                      child: Lottie.asset(
-                                        'assets/animations/excited_idle_animation.json',
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (_, __, ___) =>
-                                                const MascotWidget(
-                                          state: MascotState.happy,
-                                          width: 52,
-                                          height: 52,
-                                        ),
-                                      ),
+                                  child: const ClipOval(
+                                    child: MascotWidget(
+                                      state: MascotState.happy,
+                                      width: 52,
+                                      height: 52,
+                                      animate: false,
                                     ),
                                   ),
                                 ),
@@ -1195,7 +1173,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Your personal\nsummary',
+                                        'Your autopilot\nsnapshot',
                                         style: context.appText.h1
                                             .copyWith(
                                           fontSize: 24,
@@ -1229,7 +1207,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      '${name.substring(0, 1).toUpperCase()}${name.substring(1)} will use this to craft your meals',
+                                      '${name.substring(0, 1).toUpperCase()}${name.substring(1)} will use this to time suggestions',
                                       style:
                                           context.appText.caption.copyWith(
                                         color: Colors.white
@@ -1339,7 +1317,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                     CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Delicious meals, your way',
+                                    'Timely picks, your goals',
                                     style: context.appText.bodyStrong
                                         .copyWith(
                                       fontWeight: FontWeight.w800,
@@ -1349,7 +1327,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'We\'ll focus on taste & variety based on your preferences',
+                                    'Calendar, travel, and taste — weighted the way you chose',
                                     style:
                                         context.appText.caption.copyWith(
                                       color: AppPalette.neutral500,
@@ -1386,7 +1364,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Your preferences',
+                      'What we’ll prioritize',
                       style: context.appText.bodyStrong.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -1545,7 +1523,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                         iconColor:
                                             AppPalette.sunRewards,
                                         label:
-                                            'Personalized recipes',
+                                            '8–12 hour lookahead',
                                       ),
                                     ],
                                   ),
@@ -1559,7 +1537,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                         iconColor:
                                             AppPalette.successMint,
                                         label:
-                                            'Smart grocery lists',
+                                            'One-tap orders & templates',
                                       ),
                                     ],
                                   ),
@@ -1573,7 +1551,7 @@ class _YourStoryTransitionState extends ConsumerState<_YourStoryTransition>
                                         iconColor:
                                             const Color(0xFF8B5CF6),
                                         label:
-                                            'New flavors to discover',
+                                            'Travel & local context',
                                       ),
                                     ],
                                   ),
@@ -1807,8 +1785,8 @@ class _NameSquirrelStepState extends ConsumerState<_NameSquirrelStep> {
     );
 
     return _StepLayout(
-      title: 'Give your buddy a name',
-      subtitle: "Something fun, something you. They'll remember it.",
+      title: 'Name your autopilot',
+      subtitle: "Something you’ll trust nudging you before hunger hits.",
       mascotReaction: name != null && name.isNotEmpty
           ? "Nice to meet you! I'm $name!"
           : 'What should I go by?',
@@ -1833,7 +1811,7 @@ class _NameSquirrelStepState extends ConsumerState<_NameSquirrelStep> {
                 textAlign: TextAlign.center,
                 style: context.appText.h2.copyWith(fontWeight: FontWeight.w900),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Pip, Nutella, Sir Crunch',
+                  hintText: 'e.g. Scout, Harbor, Dash',
                   hintStyle: context.appText.body.copyWith(
                     color: AppPalette.neutral400,
                   ),
@@ -1850,7 +1828,7 @@ class _NameSquirrelStepState extends ConsumerState<_NameSquirrelStep> {
             const SizedBox(height: 24),
             Wrap(
               spacing: 8,
-              children: ['Pip', 'Nutty', 'Chef', 'Crunch'].map((s) {
+              children: ['Scout', 'Harbor', 'Pilot', 'Dash'].map((s) {
                 return GestureDetector(
                   onTap: () {
                     _nameController.text = s;
@@ -1898,21 +1876,21 @@ class _MealVibeStep extends ConsumerWidget {
     );
 
     final vibes = [
-      _VibeOption('quick', 'Quick & Easy', Icons.bolt_rounded,
-          'Done in minutes'),
-      _VibeOption('cheap', 'Budget Friendly', Icons.savings_rounded,
-          'Max flavor, min cost'),
-      _VibeOption('healthGoals', 'Health Conscious',
-          Icons.monitor_heart_rounded, 'Fuel your goals, your way'),
-      _VibeOption('comfort', 'Comfort Food', Icons.favorite_rounded,
-          'Warm & satisfying'),
-      _VibeOption('adventurous', 'Adventurous', Icons.explore_rounded,
-          'Try something new'),
+      _VibeOption('quick', 'Chaotic calendar', Icons.calendar_month_rounded,
+          'Back-to-backs, tight gaps between meetings'),
+      _VibeOption('cheap', 'Budget-smart orders', Icons.savings_rounded,
+          'Keep delivery and pickup within reach'),
+      _VibeOption('healthGoals', 'Health & energy',
+          Icons.monitor_heart_rounded, 'Macros and goals stay on track'),
+      _VibeOption('comfort', 'Reliable favorites', Icons.favorite_rounded,
+          'Known quantities when you’re fried'),
+      _VibeOption('adventurous', 'New cities & spots', Icons.explore_rounded,
+          'Local gems when you travel'),
     ];
 
     return _StepLayout(
-      title: "What's your meal vibe?",
-      subtitle: "Pick all that apply. We'll tailor every meal.",
+      title: "What should we optimize for?",
+      subtitle: "Pick all that apply — we’ll weight suggestions accordingly.",
       mascotReaction: selected.isNotEmpty
           ? _getVibeReaction(selected.last)
           : 'What are we going for?',
@@ -2006,15 +1984,15 @@ class _MealVibeStep extends ConsumerWidget {
   String _getVibeReaction(String vibe) {
     switch (vibe) {
       case 'quick':
-        return 'Speed is my middle name!';
+        return 'We’ll stay ahead of the clock.';
       case 'cheap':
-        return 'Smart money, smart meals!';
+        return 'Smart spend, zero guilt.';
       case 'healthGoals':
-        return 'Fueling your goals!';
+        return 'Goals stay in the loop.';
       case 'comfort':
-        return 'Cozy nights incoming!';
+        return 'Familiar wins when you need them.';
       case 'adventurous':
-        return 'Ooh, I like your style!';
+        return 'Love it — we’ll scout local picks.';
       default:
         return 'Nice pick!';
     }
@@ -2044,22 +2022,22 @@ class _KitchenSetupStep extends ConsumerWidget {
     );
 
     final appliances = [
-      ('stovetop', 'Stovetop', Icons.local_fire_department_rounded),
-      ('oven', 'Oven', Icons.microwave_rounded),
-      ('microwave', 'Microwave', Icons.sensors_rounded),
-      ('airFryer', 'Air Fryer', Icons.air_rounded),
-      ('instantPot', 'Instant Pot', Icons.soup_kitchen_rounded),
-      ('blender', 'Blender', Icons.blender_rounded),
-      ('toasterOven', 'Toaster Oven', Icons.breakfast_dining_rounded),
-      ('noCook', 'No-Cook Only', Icons.no_food_rounded),
+      ('stovetop', 'Cook at home', Icons.home_rounded),
+      ('oven', 'Meal prep batches', Icons.inventory_2_outlined),
+      ('microwave', 'Heat & run', Icons.sensors_rounded),
+      ('airFryer', 'Grab something fast', Icons.flash_on_rounded),
+      ('instantPot', 'One-pot wins', Icons.soup_kitchen_rounded),
+      ('blender', 'Shakes & smoothies', Icons.blender_rounded),
+      ('toasterOven', 'Quick toast & melts', Icons.breakfast_dining_rounded),
+      ('noCook', 'Order / pickup mostly', Icons.takeout_dining_rounded),
     ];
 
     return _StepLayout(
-      title: "What's in your kitchen?",
-      subtitle: "We'll match recipes to your setup.",
+      title: "How do you usually fuel up?",
+      subtitle: "We’ll tune suggestions to your real day — kitchen, desk, or on the go.",
       mascotReaction: selected.isEmpty
-          ? 'What tools do we have?'
-          : '${selected.length} tools ready!',
+          ? 'Where do meals happen?'
+          : '${selected.length} contexts noted!',
       content: GridView.builder(
         physics: const BouncingScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -2165,9 +2143,9 @@ class _BudgetStepState extends ConsumerState<_BudgetStep> {
         : '0.0';
 
     return _StepLayout(
-      title: "What's your weekly grocery budget?",
-      subtitle: "We'll find the best value meals for you.",
-      mascotReaction: 'Smart spending, smart eating!',
+      title: "Weekly food spend (groceries + orders)?",
+      subtitle: "We’ll keep suggestions realistic when links and menus have prices.",
+      mascotReaction: 'Smart spend, fewer surprises.',
       content: Column(
         children: [
           const SizedBox(height: 16),
@@ -2467,8 +2445,8 @@ class _HealthProfileStepState extends ConsumerState<_HealthProfileStep> {
     final hasAll = _gender.isNotEmpty && _activity.isNotEmpty;
 
     return _StepLayout(
-      title: "Let's personalize your nutrition",
-      subtitle: "Tell us about yourself and we'll set your targets.",
+      title: "Goals for meals out & on the go",
+      subtitle: "We use this to filter suggestions and portions — not to shame you.",
       mascotReaction: hasAll
           ? '$_goalLabel plan: ${_calcCalories} cal/day'
           : 'Tell me about yourself!',
@@ -3626,8 +3604,8 @@ class _ComfortFoodStep extends ConsumerWidget {
     ];
 
     return _StepLayout(
-      title: 'What feels like home?',
-      subtitle: "We'll serve up your favorites.",
+      title: 'Comfort orders when you’re drained?',
+      subtitle: "We’ll bias toward these when the day wins and you still need fuel.",
       mascotReaction: selected.isEmpty
           ? 'What warms your heart?'
           : '${selected.length} comfort picks!',
@@ -3733,8 +3711,8 @@ class _AdventureStepState extends ConsumerState<_AdventureStep> {
     final spiceEmoji = ['', '🌶️', '🌶️🌶️', '🔥🔥', '🔥🔥🔥'];
 
     return _StepLayout(
-      title: 'Where should we explore?',
-      subtitle: 'Pick cuisines that excite you.',
+      title: 'When you’re somewhere new…',
+      subtitle: 'Pick cuisines you’d actually try from a short list nearby.',
       mascotReaction: selected.isEmpty
           ? 'Where to next?'
           : 'Great taste! Literally!',
@@ -3876,17 +3854,17 @@ class _TimeAvailableStep extends ConsumerWidget {
     );
 
     final times = [
-      (10, 'Lightning Fast', '10 min', Icons.flash_on_rounded),
-      (20, 'Quick Cook', '20 min', Icons.timer_rounded),
-      (30, 'Worth The Wait', '30+ min', Icons.restaurant_rounded),
+      (10, 'Grab & go', '10 min', Icons.flash_on_rounded),
+      (20, 'Quick sit-down', '20 min', Icons.timer_rounded),
+      (30, 'Full lunch break', '30+ min', Icons.restaurant_rounded),
     ];
 
     return _StepLayout(
-      title: 'How long do you want to spend cooking?',
-      subtitle: "We'll match meals to your schedule.",
+      title: 'How much time to eat on a slammed day?',
+      subtitle: "We’ll only suggest what fits the window before your next block.",
       mascotReaction: selected != null
-          ? '$selected min meals? Let\'s go!'
-          : 'How fast are we going?',
+          ? '$selected min — noted.'
+          : 'Typical gap between meetings?',
       content: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -3990,7 +3968,7 @@ class _DietaryRulesStep extends ConsumerWidget {
 
     return _StepLayout(
       title: 'Any dietary rules?',
-      subtitle: 'Select all that apply, or skip if none.',
+      subtitle: 'So we don’t suggest the wrong menu when you’re ordering fast.',
       mascotReaction:
           rules.isEmpty ? 'Anything I should know?' : "Got it, I'll remember!",
       content: Wrap(
@@ -4069,8 +4047,8 @@ class _DislikesStep extends ConsumerWidget {
     ];
 
     return _StepLayout(
-      title: "Anything you can't stand?",
-      subtitle: "Tap to exclude. We'll never suggest these.",
+      title: "Ingredients to avoid?",
+      subtitle: "Tap to exclude — we’ll filter picks and saved templates.",
       mascotReaction: dislikes.isNotEmpty
           ? 'Noted! No ${dislikes.first.toLowerCase()} ever.'
           : 'Any deal-breakers?',
@@ -4197,21 +4175,31 @@ class _PantryCaptureStepState extends ConsumerState<_PantryCaptureStep> {
     );
     final hasItems = choice == 'manual' && manualItems.isNotEmpty;
 
+    final calConnected = ref.watch(
+      calendarConnectionProvider.select((s) => s.isConnected),
+    );
+
     final options = [
-      ('receipt', 'Snap a receipt', "We'll read what you bought",
-          Icons.receipt_long_rounded),
-      ('groceries', 'Snap your groceries',
-          "Quick photo of what's in front of you", Icons.camera_alt_rounded),
-      ('manual', 'Select manually', 'Pick from common grocery items',
-          Icons.checklist_rounded),
+      (
+        'receipt',
+        calConnected ? 'Google Calendar' : 'Google Calendar (next)',
+        calConnected
+            ? 'Calendar linked — suggestions can follow your busy times.'
+            : 'Link from the previous screen, or connect later in settings.',
+        Icons.calendar_month_rounded,
+      ),
+      ('groceries', 'Travel & flights (manual for now)',
+          "Add trips, hotels, or city changes you already know", Icons.flight_rounded),
+      ('manual', 'Mostly local / routine', 'Pick staples we should bias toward',
+          Icons.location_on_rounded),
     ];
 
     return _StepLayout(
-      title: "Let's stock your pantry",
-      subtitle: 'The more I know, the better your picks.',
+      title: "Where will suggestions meet you?",
+      subtitle: 'MVP: Calendar sync and travel entry come next — set expectations now.',
       mascotReaction: hasItems
-          ? '${manualItems.length} items added!'
-          : "I'll remember what you have.",
+          ? '${manualItems.length} staples saved'
+          : 'Home, road, or both?',
       content: ListView(
         physics: const BouncingScrollPhysics(),
         children: options.map((o) {
@@ -4340,7 +4328,7 @@ class _PantryCaptureStepState extends ConsumerState<_PantryCaptureStep> {
           // Back + title
           Row(
             children: [
-              Text("Select your pantry items",
+              Text("Staples & go-tos to bias toward",
                   style: context.appText.h3
                       .copyWith(fontWeight: FontWeight.w900)),
             ],
@@ -4350,7 +4338,7 @@ class _PantryCaptureStepState extends ConsumerState<_PantryCaptureStep> {
           TextField(
             onChanged: (v) => setState(() => _search = v),
             decoration: InputDecoration(
-              hintText: 'Search items...',
+              hintText: 'Search staples...',
               prefixIcon: const Icon(Icons.search_rounded,
                   color: AppPalette.neutral400),
               fillColor: AppPalette.surfaceWhite,
@@ -4491,11 +4479,11 @@ class _PantryCaptureStepState extends ConsumerState<_PantryCaptureStep> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Skip pantry setup?',
+        title: Text('Skip this step?',
             style: context.appText.h3.copyWith(fontWeight: FontWeight.w900)),
         content: Text(
-          'Your pantry helps us suggest meals you can actually make. '
-          "It's recommended to add at least a few items.",
+          'Staples and context help us bias suggestions. '
+          "You can add them later in settings.",
           style: context.appText.body.copyWith(color: AppPalette.neutral500),
         ),
         actions: [
@@ -4667,7 +4655,7 @@ class _BeforeAfterStepState extends ConsumerState<_BeforeAfterStep>
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: Text(
-                _revealed ? 'This is Nibbl' : "Here's the shift",
+                _revealed ? 'Healthy Autopilot' : "Here's the shift",
                 key: ValueKey('title_$_revealed'),
                 style: context.appText.h1.copyWith(
                   fontSize: 30,
@@ -4684,8 +4672,8 @@ class _BeforeAfterStepState extends ConsumerState<_BeforeAfterStep>
               duration: const Duration(milliseconds: 400),
               child: Text(
                 _revealed
-                    ? 'Your meals, your goals, on autopilot.'
-                    : 'Scratch to reveal what changes.',
+                    ? 'Proactive plans — not reactive guilt.'
+                    : 'Scratch to see what changes.',
                 key: ValueKey('sub_$_revealed'),
                 style: context.appText.body.copyWith(
                   color: _revealed
@@ -4890,7 +4878,7 @@ class _BeforeAfterStepState extends ConsumerState<_BeforeAfterStep>
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
-                    _revealed ? 'WITH NIBBL' : 'WITHOUT NIBBL',
+                    _revealed ? 'WITH AUTOPILOT' : 'WITHOUT AUTOPILOT',
                     style: context.appText.caption.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
@@ -5096,12 +5084,12 @@ class _NibblContractStepState extends ConsumerState<_NibblContractStep> {
 
     return _StepLayout(
       title: 'Make it real',
-      subtitle: 'A small commitment goes a long way.',
+      subtitle: 'A small habit — trusting a plan before you are depleted.',
       mascotReaction: hasSigned ? "That's a promise!" : 'I believe in you!',
       content: Column(
         children: [
           // ── Commitment sentence with hero number ──
-          Text('I commit to cooking at home',
+          Text('I’ll use timely suggestions',
               style: context.appText.body
                   .copyWith(fontWeight: FontWeight.w600, fontSize: 16,
                       color: AppPalette.neutral500)),
@@ -5189,7 +5177,7 @@ class _NibblContractStepState extends ConsumerState<_NibblContractStep> {
               ),
             ],
           ),
-          Text('nights a week',
+          Text('days a week',
               style: context.appText.bodyStrong
                   .copyWith(fontWeight: FontWeight.w800, fontSize: 18)),
           const SizedBox(height: 14),
@@ -5276,19 +5264,19 @@ class _NibblContractStepState extends ConsumerState<_NibblContractStep> {
   String _commitEncouragement(int n) {
     switch (n) {
       case 1:
-        return 'One night is a great start!';
+        return 'One day — great start!';
       case 2:
-        return 'Two nights — building the habit!';
+        return 'Two days — building the habit!';
       case 3:
-        return 'Three nights — a solid routine!';
+        return 'Three days — solid routine!';
       case 4:
-        return 'Four nights — you\'re going strong!';
+        return 'Four days — you are on a roll!';
       case 5:
-        return 'Five nights — impressive dedication!';
+        return 'Five days — serious commitment!';
       case 6:
-        return 'Six nights — nearly every day!';
+        return 'Six days — almost every day!';
       case 7:
-        return 'Every single night — legendary! 🔥';
+        return 'Every day — legendary! 🔥';
       default:
         return 'A great commitment!';
     }
@@ -5362,9 +5350,9 @@ class _MealReminderStepState extends ConsumerState<_MealReminderStep> {
     final dayNumbers = [0, 1, 2, 3, 4, 5, 6]; // 0=Sun,1=Mon,...6=Sat
 
     return _StepLayout(
-      title: 'Want a gentle meal reminder?',
-      subtitle: "We'll remind you when it's time to decide.",
-      mascotReaction: 'Get +100 Nibbl Coins when you turn on reminders!',
+      title: 'Nudge before the crash?',
+      subtitle: "We’ll ping when it’s time to order or grab food — not after you’re hangry.",
+      mascotReaction: 'Timely beats hangry.',
       content: Column(
         children: [
           const SizedBox(height: 8),
@@ -5497,7 +5485,7 @@ class _MealReminderStepState extends ConsumerState<_MealReminderStep> {
                 const Icon(Icons.monetization_on_rounded,
                     color: AppPalette.sunRewards, size: 20),
                 const SizedBox(width: 8),
-                Text('+100 Nibbl Coins for turning on reminders',
+                Text('Turn on notifications for proactive nudges',
                     style: context.appText.caption.copyWith(
                       color: AppPalette.deepNavy,
                       fontWeight: FontWeight.w700,
@@ -5612,7 +5600,7 @@ class _EmotionalWinStepState extends ConsumerState<_EmotionalWinStep>
     final data = ref.watch(onboardingFlowProvider).data;
     final nights = data.commitNights ?? 3;
     final time = data.timeAvailableMin ?? 20;
-    final name = data.squirrelName ?? 'your buddy';
+    final name = data.squirrelName ?? 'Autopilot';
     final vibes = data.mealVibes;
 
     final targetDay = DateTime.now().add(const Duration(days: 3));
@@ -5623,8 +5611,8 @@ class _EmotionalWinStepState extends ConsumerState<_EmotionalWinStep>
     final targetDayName = dayNames[targetDay.weekday - 1];
 
     return _StepLayout(
-      title: 'Your week starts here',
-      subtitle: '$name has everything ready.',
+      title: 'Your week, pre-thought',
+      subtitle: '$name is tuned to your calendar, travel, and goals.',
       mascotReaction: "You're going to crush this!",
       content: AnimatedBuilder(
         animation: _countAnim,
@@ -5688,7 +5676,7 @@ class _EmotionalWinStepState extends ConsumerState<_EmotionalWinStep>
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'meals planned this week',
+                        'days with a plan this week',
                         style: context.appText.bodyStrong.copyWith(
                           color: Colors.white.withValues(alpha: 0.55),
                           fontWeight: FontWeight.w600,
@@ -5708,7 +5696,7 @@ class _EmotionalWinStepState extends ConsumerState<_EmotionalWinStep>
                         context,
                         Icons.timer_rounded,
                         'Under ${(time * t).round()} min',
-                        'avg cook time',
+                        'per meal window',
                         AppPalette.successMint,
                         0.15,
                       ),

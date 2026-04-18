@@ -12,7 +12,7 @@ class DashDoorApp extends ConsumerWidget {
     final theme = ref.watch(appThemeProvider);
 
     return MaterialApp(
-      title: 'DashDoor',
+      title: 'Healthy Autopilot',
       debugShowCheckedModeBanner: false,
       theme: theme,
       home: const AppShell(),

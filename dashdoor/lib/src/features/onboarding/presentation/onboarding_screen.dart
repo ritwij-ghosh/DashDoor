@@ -123,8 +123,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             children: [
                               Text(
                                 _currentPage == 0
-                                    ? "Let's Get Started!"
-                                    : "Sounds tasty! Next",
+                                    ? "Show me how"
+                                    : "Sounds right — next",
                                 style: context.appText.bodyStrong.copyWith(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -143,7 +143,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Join 10,000+ happy home cooks',
+                        'Built for packed calendars and weird travel days',
                         style: context.appText.small.copyWith(
                           color: AppPalette.neutral500,
                           fontSize: 13,
@@ -198,27 +198,27 @@ class _OnboardingStep3 extends StatelessWidget {
                       ),
                     ),
 
-                    // Top-right "Saved" badge
+                    // Top-right: timely nudge
                     Positioned(
                       top: 16,
                       right: 16,
                       child: _FloatingBadge(
-                        icon: Icons.savings_rounded,
+                        icon: Icons.schedule_rounded,
                         iconColor: AppPalette.successMint,
-                        label: 'Saved',
-                        value: '\$12.50',
+                        label: 'Next gap',
+                        value: 'Order by 12:15',
                       ),
                     ),
 
-                    // Bottom-left "Achievement" badge
+                    // Bottom-left: travel context
                     Positioned(
                       bottom: 16,
                       left: 16,
                       child: _FloatingBadge(
-                        icon: Icons.emoji_events_rounded,
+                        icon: Icons.flight_land_rounded,
                         iconColor: AppPalette.sunRewards,
-                        label: 'Achievement',
-                        value: 'Fridge Hero',
+                        label: 'Lands',
+                        value: '8:40 PM',
                       ),
                     ),
                   ],
@@ -242,9 +242,9 @@ class _OnboardingStep3 extends StatelessWidget {
                       height: 1.1,
                     ),
                     children: [
-                      const TextSpan(text: 'Turn Leftovers into '),
+                      const TextSpan(text: 'Land tired, eat '),
                       TextSpan(
-                        text: 'Level-Ups',
+                        text: 'on purpose',
                         style: const TextStyle(color: AppPalette.sunRewards),
                       ),
                     ],
@@ -252,7 +252,7 @@ class _OnboardingStep3 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Get rewarded for clearing your fridge. Every meal you cook saves money and earns you badges. Who knew being thrifty could be this fun?',
+                  'When you touch down or step out of back-to-backs, we surface nearby meals and one-tap orders that still match your goals.',
                   textAlign: TextAlign.center,
                   style: context.appText.body.copyWith(
                     color: AppPalette.neutral700,
@@ -309,7 +309,7 @@ class _OnboardingStep2 extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Zero Guilt Cooking',
+                  'Your calendar, decoded',
                   textAlign: TextAlign.center,
                   style: context.appText.h1.copyWith(
                     fontSize: 32,
@@ -320,7 +320,7 @@ class _OnboardingStep2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Did plans change? Missing ingredients? Our autopilot adapts instantly to your reality. No stress, just great meals.',
+                  'Meetings stacked through lunch? Flight at 6am? We plan the next 8–12 hours so you are not guessing when hunger hits.',
                   textAlign: TextAlign.center,
                   style: context.appText.body.copyWith(
                     color: AppPalette.neutral700,
@@ -420,9 +420,9 @@ class _OnboardingStep1 extends StatelessWidget {
                       height: 1.1,
                     ),
                     children: [
-                      const TextSpan(text: 'Decide meals in '),
+                      const TextSpan(text: "Before you're hungry, "),
                       TextSpan(
-                        text: 'one tap.',
+                        text: 'a plan.',
                         style: const TextStyle(color: AppPalette.sunRewards),
                       ),
                     ],
@@ -430,7 +430,7 @@ class _OnboardingStep1 extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Stop scrolling, start cooking. The autopilot that makes meals effortless and rewarding.',
+                  'Healthy Autopilot reads your rhythm — calendar blocks, travel, and where you are — then pushes timely picks and order links.',
                   textAlign: TextAlign.center,
                   style: context.appText.body.copyWith(
                     color: AppPalette.neutral700,

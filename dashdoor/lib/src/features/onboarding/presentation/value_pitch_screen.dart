@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
-
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
 import '../../../shared/widgets/mascot_widget.dart';
@@ -154,22 +152,11 @@ class _ValuePitchScreenState extends ConsumerState<ValuePitchScreen>
                             child: child,
                           );
                         },
-                        child: SizedBox(
+                        child: const MascotWidget(
+                          state: MascotState.happy,
                           width: 110,
                           height: 110,
-                          child: Transform.translate(
-                            offset: const Offset(7.5, 0),
-                            child: Lottie.asset(
-                              'assets/animations/excited_idle_animation.json',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  const MascotWidget(
-                                state: MascotState.happy,
-                                width: 110,
-                                height: 110,
-                              ),
-                            ),
-                          ),
+                          animate: false,
                         ),
                       ),
                     ),
@@ -210,7 +197,7 @@ class _ValuePitchScreenState extends ConsumerState<ValuePitchScreen>
                             },
                             blendMode: BlendMode.srcIn,
                             child: Text(
-                              'Meals,\ndecided.',
+                              'Food,\nplanned.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: AppTypography.fontFamily,
@@ -240,7 +227,7 @@ class _ValuePitchScreenState extends ConsumerState<ValuePitchScreen>
                         );
                       },
                       child: Text(
-                        'Goals, hit.',
+                        'Chaos, handled.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: AppTypography.fontFamily,
@@ -264,7 +251,7 @@ class _ValuePitchScreenState extends ConsumerState<ValuePitchScreen>
                         return Opacity(opacity: t, child: child);
                       },
                       child: Text(
-                        '3 picks in 20 seconds — from what\nyou already have at home.',
+                        'Proactive meal ideas from your calendar,\ntravel, and location — before you crash.',
                         textAlign: TextAlign.center,
                         style: context.appText.body.copyWith(
                           color: Colors.white.withValues(alpha: 0.75),

@@ -376,7 +376,7 @@ class _PaywallStep1 extends StatelessWidget {
           FadeInEntrance(
             delay: const Duration(milliseconds: 200),
             child: Text(
-              'Start your\nNibbl journey',
+              'Unlock full\nHealthy Autopilot',
               textAlign: TextAlign.center,
               style: context.appText.h1.copyWith(
                 fontSize: 32,
@@ -389,7 +389,7 @@ class _PaywallStep1 extends StatelessWidget {
           FadeInEntrance(
             delay: const Duration(milliseconds: 300),
             child: Text(
-              'Get nutrition-optimized options, smarter pantry\ntracking, and Cook Mode upgrades.',
+              'Calendar-aware nudges, travel-aware picks, one-tap orders,\nand saved templates — before hunger hits.',
               textAlign: TextAlign.center,
               style: context.appText.body.copyWith(
                 color: AppPalette.neutral500,
@@ -403,17 +403,17 @@ class _PaywallStep1 extends StatelessWidget {
             delay: const Duration(milliseconds: 400),
             child: Column(
               children: [
-                _buildFeatureRow(context, Icons.fitness_center_rounded,
-                    'Nutrition Boost toggle', AppPalette.primary),
+                _buildFeatureRow(context, Icons.calendar_month_rounded,
+                    'Google Calendar sync (MVP next)', AppPalette.primary),
                 const SizedBox(height: 14),
-                _buildFeatureRow(context, Icons.auto_awesome_rounded,
-                    'Smart pantry auto-tracking', AppPalette.successMint),
+                _buildFeatureRow(context, Icons.flight_takeoff_rounded,
+                    'Manual travel & location context', AppPalette.successMint),
                 const SizedBox(height: 14),
-                _buildFeatureRow(context, Icons.restaurant_menu_rounded,
-                    'Cook Mode upgrades', AppPalette.sunRewards),
+                _buildFeatureRow(context, Icons.schedule_rounded,
+                    '8–12 hour lookahead suggestions', AppPalette.sunRewards),
                 const SizedBox(height: 14),
-                _buildFeatureRow(context, Icons.remove_red_eye_rounded,
-                    'Expiry Vision prioritization', AppPalette.primary),
+                _buildFeatureRow(context, Icons.link_rounded,
+                    'One-tap orders & meal templates', AppPalette.primary),
               ],
             ),
           ),
@@ -743,24 +743,24 @@ class _PaywallStep3 extends StatelessWidget {
                 _buildBonusItem(
                   context,
                   Icons.monetization_on_rounded,
-                  '+300 Nibbl Coins',
-                  'Spend on upgrades and cosmetics',
+                  '+300 Autopilot credits',
+                  'For premium nudges & templates (coming soon)',
                   AppPalette.sunRewards,
                 ),
                 const SizedBox(height: 16),
                 _buildBonusItem(
                   context,
                   Icons.checkroom_rounded,
-                  '1 Exclusive Squirrel Outfit',
-                  'Chef hat for your kitchen buddy',
+                  'Priority travel-day routing',
+                  'Heavier suggestions when you land or switch cities',
                   AppPalette.primary,
                 ),
                 const SizedBox(height: 16),
                 _buildBonusItem(
                   context,
                   Icons.fitness_center_rounded,
-                  'Nutrition Boost Recipe Toggles',
-                  'Optimize nutrition in every meal',
+                  'Macro-aware menus',
+                  'Filter picks to your goals when eating out',
                   AppPalette.successMint,
                 ),
               ],
@@ -931,7 +931,7 @@ class _PaywallStep4 extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Nibbl Plus',
+                    'Autopilot Plus',
                     style: context.appText.h2.copyWith(
                       fontWeight: FontWeight.w900,
                       fontSize: 26,

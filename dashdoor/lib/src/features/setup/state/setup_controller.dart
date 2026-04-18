@@ -26,7 +26,7 @@ class SetupState {
     this.selectedIngredientIds = const {},
     this.searchQuery = '',
     this.selectedTimeLimit = '15',
-    this.selectedVibes = const {'Healthy', 'Asian'},
+    this.selectedVibes = const {'High protein', 'Fresh / light'},
   });
 
   SetupState copyWith({

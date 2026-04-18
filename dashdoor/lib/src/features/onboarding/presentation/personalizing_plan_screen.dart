@@ -29,32 +29,32 @@ class _PersonalizingPlanScreenState
   Timer? _reviewTimer;
 
   static const _steps = [
-    'Analyzing your preferences',
-    'Building your flavor profile',
-    'Matching recipes to your pantry',
-    'Optimizing your meal plan',
-    'Adding the finishing touches',
+    'Reading your priorities',
+    'Mapping meals to your week',
+    'Scouting options for the next 8–12 hours',
+    'Pairing goals with real locations',
+    'Locking in your autopilot',
   ];
 
   static const _reviews = [
     _ReviewData(
       text:
-          "I used to dread figuring out what to cook every night. "
-          "Now I actually look forward to it — every meal just works.",
+          "Back-to-back interviews from 1 to 5 — it told me to order lunch "
+          "before I got hangry. Game changer.",
       author: 'Sarah M.',
       stars: 5,
     ),
     _ReviewData(
       text:
-          "The fact that it uses what I already have in my kitchen "
-          "is a game changer. Less waste, less stress, better food.",
+          "I landed in Denver at 8:40 PM starving. Three nearby picks "
+          "actually fit my macros. I didn’t have to think.",
       author: 'James K.',
       stars: 5,
     ),
     _ReviewData(
       text:
-          "My partner and I both love it. The recipes are actually "
-          "delicious and we're saving money on groceries.",
+          "Most apps react after I mess up. This one plans around chaos — "
+          "flights, hotels, weird days.",
       author: 'Priya R.',
       stars: 5,
     ),

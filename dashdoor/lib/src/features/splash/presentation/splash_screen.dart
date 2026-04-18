@@ -167,7 +167,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   );
                                 },
                                 child: Text(
-                                  'DashDoor',
+                                  'Healthy Autopilot',
                                   style: context.appText.h1.copyWith(
                                     fontSize: 42,
                                     height: 1.05,
@@ -191,7 +191,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   );
                                 },
                                 child: Text(
-                                  'Stop scrolling,\nstart eating.',
+                                  "Eat well before\nyou're hangry.",
                                   textAlign: TextAlign.center,
                                   style: context.appText.h3.copyWith(
                                     fontSize: 20,
@@ -434,7 +434,7 @@ class _ProgressBlock extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'LOADING MENU...',
+                'SYNCING YOUR DAY...',
                 style: context.appText.smallStrong.copyWith(
                   color: AppPalette.primary,
                   letterSpacing: 2.8,

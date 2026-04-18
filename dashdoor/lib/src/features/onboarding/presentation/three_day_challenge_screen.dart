@@ -144,7 +144,7 @@ class _ThreeDayChallengeScreenState
               FadeInEntrance(
                 delay: const Duration(milliseconds: 300),
                 child: Text(
-                  '3-Day Cooking Sprint',
+                  '3-Day Autopilot streak',
                   textAlign: TextAlign.center,
                   style: context.appText.h1.copyWith(
                     fontSize: 30,
@@ -158,7 +158,7 @@ class _ThreeDayChallengeScreenState
               FadeInEntrance(
                 delay: const Duration(milliseconds: 400),
                 child: Text(
-                  'Commit for 3 days, earn a Surprise Gift.',
+                  'Follow a timely suggestion once per day — build the habit before hunger decides.',
                   textAlign: TextAlign.center,
                   style: context.appText.body.copyWith(
                     color: AppPalette.neutral500,
@@ -177,27 +177,27 @@ class _ThreeDayChallengeScreenState
                     _buildDayCard(
                       context,
                       day: 1,
-                      title: 'Cook 1 recipe',
-                      subtitle: 'Using items from your pantry',
-                      icon: Icons.restaurant_rounded,
+                      title: 'Tap one suggestion',
+                      subtitle: 'Before your calendar gap closes',
+                      icon: Icons.touch_app_rounded,
                       color: AppPalette.primary,
                     ),
                     const SizedBox(height: 12),
                     _buildDayCard(
                       context,
                       day: 2,
-                      title: 'Use Nutrition Boost',
-                      subtitle: 'Toggle it on for one meal',
-                      icon: Icons.fitness_center_rounded,
+                      title: 'Use an order link',
+                      subtitle: 'Or a saved template — your call',
+                      icon: Icons.link_rounded,
                       color: AppPalette.successMint,
                     ),
                     const SizedBox(height: 12),
                     _buildDayCard(
                       context,
                       day: 3,
-                      title: 'Share or complete Cook Mode',
-                      subtitle: 'Share a meal card or finish a session',
-                      icon: Icons.share_rounded,
+                      title: 'Add travel or location',
+                      subtitle: 'So tomorrow’s picks fit where you’ll be',
+                      icon: Icons.flight_rounded,
                       color: AppPalette.sunRewards,
                     ),
                   ],
@@ -228,7 +228,7 @@ class _ThreeDayChallengeScreenState
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Day 3 reward: Special discounted offer + bonus coins',
+                          'Day 3: template pack + discounted Autopilot Plus',
                           style: context.appText.small.copyWith(
                             color: AppPalette.deepNavy,
                             fontWeight: FontWeight.w700,

@@ -5,9 +5,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
 import '../../../shared/widgets/mascot_widget.dart';
-import '../../onboarding/presentation/extended_onboarding_screen.dart';
+import '../../onboarding/presentation/google_calendar_connect_screen.dart';
 
-/// Same layout as What2Eat — OTP flow is local-only (no backend).
+/// Same layout as the source app — OTP flow is local-only (no backend).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const ExtendedOnboardingScreen(),
+        pageBuilder: (_, __, ___) => const GoogleCalendarConnectScreen(),
         transitionsBuilder: (_, a, __, child) {
           return FadeTransition(
             opacity: a,
@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen>
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: Text(
-                        isCode ? 'Check your inbox' : 'Welcome to Nibbl',
+                        isCode ? 'Check your inbox' : 'Welcome to Healthy Autopilot',
                         key: ValueKey(isCode),
                         textAlign: TextAlign.center,
                         style: context.appText.h1.copyWith(
@@ -274,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Join 10,000+ home cooks',
+                            'Join people who stopped deciding meals at 9pm',
                             style: context.appText.caption.copyWith(
                               color: AppPalette.deepNavy,
                               fontWeight: FontWeight.w700,
