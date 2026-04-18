@@ -16,7 +16,9 @@ dependencies:
   lottie: ^3.3.1
   video_player: ^2.9.2
   purchases_flutter: ^9.11.1
+  supabase_flutter: ^2.8.4
   http: ^1.2.2
+  intl: ^0.19.0
   shared_preferences: ^2.3.3
   uuid: ^4.5.1
   url_launcher: ^6.3.1

@@ -1,70 +1,51 @@
-import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
-from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from supabase import Client
 
-from app.models.recommendation import Recommendation, UserLocation
-from app.models.user import User
 from app.services.ai_service import generate_meal_plan
-from app.services.calendar_service import get_upcoming_events
+from app.services.calendar_service import fetch_events_for_entity
 
 
-async def generate_recommendations(
-    user: User,
-    db: AsyncSession,
+async def generate_recommendations_for_user(
+    user_id: str,
+    db: Client,
     location_override: str | None = None,
     travel_override: str | None = None,
-) -> Recommendation:
-    # 1. Resolve location
-    location_str = location_override
-    travel_context = travel_override
+) -> dict:
+    profile_res = db.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
+    profile = profile_res.data or {}
 
-    if not location_str:
-        result = await db.execute(
-            select(UserLocation).where(UserLocation.user_id == user.id)
-        )
-        saved = result.scalar_one_or_none()
-        if saved:
-            location_str = saved.city
-            if saved.address:
-                location_str = f"{saved.address}, {saved.city}"
-            if not travel_context and saved.travel_note:
-                travel_context = saved.travel_note
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No location set. POST to /api/v1/location or include 'location' in the request body.",
-            )
+    loc_res = db.table("user_locations").select("*").eq("user_id", user_id).maybe_single().execute()
+    location_row = loc_res.data
 
-    # 2. Fetch calendar events
-    events = await get_upcoming_events(user, hours=12)
+    location = location_override or (location_row.get("city") if location_row else None) or "Unknown"
+    travel_context = travel_override or (location_row.get("travel_note") if location_row else None)
 
-    # 3. Generate AI recommendations
-    now = datetime.now(timezone.utc)
-    ai_result = await generate_meal_plan(
+    events: list[dict] = []
+    entity_id = profile.get("composio_entity_id")
+    if profile.get("calendar_connected") and entity_id:
+        events = fetch_events_for_entity(entity_id, hours=12)
+
+    now = datetime.utcnow()
+    plan = await generate_meal_plan(
         events=events,
-        location=location_str,
+        location=location,
         travel_context=travel_context,
         current_time=now,
     )
 
-    # 4. Persist
-    window_end = now + timedelta(hours=12)
-    rec = Recommendation(
-        id=str(uuid.uuid4()),
-        user_id=user.id,
-        generated_at=now,
-        location=location_str,
-        travel_context=travel_context,
-        calendar_summary=json.dumps(events),
-        recommendations_json=json.dumps(ai_result),
-        window_start=now,
-        window_end=window_end,
-    )
-    db.add(rec)
-    await db.commit()
-    await db.refresh(rec)
-    return rec
+    rec_id = str(uuid.uuid4())
+    row = {
+        "id": rec_id,
+        "user_id": user_id,
+        "generated_at": now.isoformat(),
+        "location": location,
+        "travel_context": travel_context,
+        "calendar_summary": events,
+        "recommendations_json": plan,
+        "window_start": now.isoformat(),
+        "window_end": (now + timedelta(hours=12)).isoformat(),
+    }
+    db.table("recommendations").insert(row).execute()
+    return row
