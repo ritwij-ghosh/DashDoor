@@ -15,10 +15,10 @@ async def generate_recommendations_for_user(
     travel_override: str | None = None,
 ) -> dict:
     profile_res = db.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
-    profile = profile_res.data or {}
+    profile = (profile_res.data if profile_res else None) or {}
 
     loc_res = db.table("user_locations").select("*").eq("user_id", user_id).maybe_single().execute()
-    location_row = loc_res.data
+    location_row = loc_res.data if loc_res else None
 
     location = location_override or (location_row.get("city") if location_row else None) or "Unknown"
     travel_context = travel_override or (location_row.get("travel_note") if location_row else None)

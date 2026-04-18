@@ -19,7 +19,7 @@ class ProfileUpdate(BaseModel):
 async def get_profile(user_id: str = Depends(get_current_user_id)) -> dict:
     db = get_supabase()
     res = db.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
-    return res.data or {}
+    return (res.data if res else None) or {}
 
 
 @router.put("")
@@ -32,4 +32,4 @@ async def update_profile(
     if updates:
         db.table("profiles").update(updates).eq("id", user_id).execute()
     res = db.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
-    return res.data or {}
+    return (res.data if res else None) or {}

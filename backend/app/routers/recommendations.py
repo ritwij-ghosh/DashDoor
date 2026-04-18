@@ -60,6 +60,7 @@ async def get_recommendation(
         .maybe_single()
         .execute()
     )
-    if not res.data:
+    data = res.data if res else None
+    if not data:
         raise HTTPException(status_code=404, detail="Not found")
-    return res.data
+    return data

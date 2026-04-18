@@ -39,6 +39,7 @@ async def upsert_location(
 async def get_location(user_id: str = Depends(get_current_user_id)) -> dict:
     db = get_supabase()
     res = db.table("user_locations").select("*").eq("user_id", user_id).maybe_single().execute()
-    if not res.data:
+    data = res.data if res else None
+    if not data:
         raise HTTPException(status_code=404, detail="No location set")
-    return res.data
+    return data

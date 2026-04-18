@@ -29,10 +29,10 @@ async def send_message(
     db = get_supabase()
 
     profile_res = db.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
-    profile = profile_res.data or {}
+    profile = (profile_res.data if profile_res else None) or {}
 
     loc_res = db.table("user_locations").select("*").eq("user_id", user_id).maybe_single().execute()
-    location = loc_res.data
+    location = loc_res.data if loc_res else None
 
     history_res = (
         db.table("chat_messages")
