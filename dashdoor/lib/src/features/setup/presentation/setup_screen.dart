@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/mascot_widget.dart';
-import '../../home/presentation/placeholder_home_screen.dart';
+import '../../home/presentation/home_screen.dart';
 import '../state/setup_controller.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
@@ -34,7 +34,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const PlaceholderHomeScreen(),
+          builder: (context) => const HomeScreen(),
         ),
       );
     }

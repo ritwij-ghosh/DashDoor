@@ -1,122 +1,106 @@
+import datetime
 import uuid
-from typing import Annotated
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
-from app.database import get_db
-from app.models.meal import MealTemplate
-from app.models.user import User
-from app.routers.auth import get_current_user
-from app.schemas.meal import MealTemplateCreate, MealTemplateResponse, MealTemplateUpdate
+from app.routers.auth import get_current_user_id
+from app.database import get_supabase
 
 router = APIRouter(prefix="/meals", tags=["meals"])
 
 
-@router.post("/templates", response_model=MealTemplateResponse, status_code=status.HTTP_201_CREATED)
+class MealTemplateCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    restaurant_name: Optional[str] = None
+    order_url: Optional[str] = None
+    calories: Optional[int] = None
+    tags: list[str] = []
+
+
+class MealScoreCreate(BaseModel):
+    meal_name: str
+    score: int  # 1-5
+    notes: Optional[str] = None
+    recommendation_id: Optional[str] = None
+
+
+@router.post("/templates", status_code=201)
 async def create_template(
-    data: MealTemplateCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> MealTemplateResponse:
-    template = MealTemplate(
-        id=str(uuid.uuid4()),
-        user_id=current_user.id,
-        name=data.name,
-        description=data.description,
-        restaurant_name=data.restaurant_name,
-        order_url=data.order_url,
-        calories=data.calories,
-        tags=",".join(data.tags) if data.tags else None,
+    body: MealTemplateCreate,
+    user_id: str = Depends(get_current_user_id),
+) -> dict:
+    db = get_supabase()
+    res = db.table("meal_templates").insert({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "name": body.name,
+        "description": body.description,
+        "restaurant_name": body.restaurant_name,
+        "order_url": body.order_url,
+        "calories": body.calories,
+        "tags": body.tags,
+        "created_at": datetime.datetime.utcnow().isoformat(),
+    }).execute()
+    return res.data[0]
+
+
+@router.get("/templates")
+async def list_templates(user_id: str = Depends(get_current_user_id)) -> list[dict]:
+    db = get_supabase()
+    res = (
+        db.table("meal_templates")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
     )
-    db.add(template)
-    await db.commit()
-    await db.refresh(template)
-    return MealTemplateResponse.from_orm_model(template)
+    return res.data or []
 
 
-@router.get("/templates", response_model=list[MealTemplateResponse])
-async def list_templates(
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> list[MealTemplateResponse]:
-    result = await db.execute(
-        select(MealTemplate)
-        .where(MealTemplate.user_id == current_user.id)
-        .order_by(MealTemplate.created_at.desc())
-    )
-    templates = result.scalars().all()
-    return [MealTemplateResponse.from_orm_model(t) for t in templates]
-
-
-@router.get("/templates/{template_id}", response_model=MealTemplateResponse)
-async def get_template(
-    template_id: str,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> MealTemplateResponse:
-    result = await db.execute(
-        select(MealTemplate).where(
-            MealTemplate.id == template_id,
-            MealTemplate.user_id == current_user.id,
-        )
-    )
-    template = result.scalar_one_or_none()
-    if not template:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal template not found")
-    return MealTemplateResponse.from_orm_model(template)
-
-
-@router.put("/templates/{template_id}", response_model=MealTemplateResponse)
-async def update_template(
-    template_id: str,
-    data: MealTemplateUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> MealTemplateResponse:
-    result = await db.execute(
-        select(MealTemplate).where(
-            MealTemplate.id == template_id,
-            MealTemplate.user_id == current_user.id,
-        )
-    )
-    template = result.scalar_one_or_none()
-    if not template:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal template not found")
-
-    if data.name is not None:
-        template.name = data.name
-    if data.description is not None:
-        template.description = data.description
-    if data.restaurant_name is not None:
-        template.restaurant_name = data.restaurant_name
-    if data.order_url is not None:
-        template.order_url = data.order_url
-    if data.calories is not None:
-        template.calories = data.calories
-    if data.tags is not None:
-        template.tags = ",".join(data.tags) if data.tags else None
-
-    await db.commit()
-    await db.refresh(template)
-    return MealTemplateResponse.from_orm_model(template)
-
-
-@router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/templates/{template_id}", status_code=204)
 async def delete_template(
     template_id: str,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    user_id: str = Depends(get_current_user_id),
 ) -> None:
-    result = await db.execute(
-        select(MealTemplate).where(
-            MealTemplate.id == template_id,
-            MealTemplate.user_id == current_user.id,
-        )
+    db = get_supabase()
+    db.table("meal_templates").delete().eq("id", template_id).eq("user_id", user_id).execute()
+
+
+@router.post("/scores", status_code=201)
+async def score_meal(
+    body: MealScoreCreate,
+    user_id: str = Depends(get_current_user_id),
+) -> dict:
+    if not 1 <= body.score <= 5:
+        raise HTTPException(status_code=400, detail="Score must be between 1 and 5")
+    db = get_supabase()
+    res = db.table("meal_scores").insert({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "meal_name": body.meal_name,
+        "score": body.score,
+        "notes": body.notes,
+        "recommendation_id": body.recommendation_id,
+        "eaten_at": datetime.datetime.utcnow().isoformat(),
+    }).execute()
+    return res.data[0]
+
+
+@router.get("/scores")
+async def get_scores(
+    limit: int = 20,
+    user_id: str = Depends(get_current_user_id),
+) -> list[dict]:
+    db = get_supabase()
+    res = (
+        db.table("meal_scores")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("eaten_at", desc=True)
+        .limit(limit)
+        .execute()
     )
-    template = result.scalar_one_or_none()
-    if not template:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal template not found")
-    await db.delete(template)
-    await db.commit()
+    return res.data or []

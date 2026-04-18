@@ -12,7 +12,11 @@
       "Bash(/c/Users/rithw/miniconda3/Scripts/python.exe -c \"import fastapi; print\\('fastapi OK'\\)\")",
       "Bash(/c/Users/rithw/miniconda3/Scripts/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK — routes:', [r.path for r in app.routes]\\)\")",
       "Read(//c/Users/rithw/miniconda3/**)",
-      "Bash(/c/Users/rithw/miniconda3/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK routes:', [r.path for r in app.routes]\\)\")"
+      "Bash(/c/Users/rithw/miniconda3/python.exe -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('OK routes:', [r.path for r in app.routes]\\)\")",
+      "Bash(git pull *)",
+      "Skill(update-config)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
     ]
   }
 }

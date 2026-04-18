@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
 import '../../../shared/widgets/mascot_widget.dart';
-import '../../onboarding/presentation/extended_onboarding_screen.dart';
+import '../../home/presentation/home_screen.dart';
 
 /// Same layout as What2Eat — OTP flow is local-only (no backend).
 class LoginScreen extends StatefulWidget {
@@ -49,33 +50,55 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-    setState(() => _loading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    setState(() => _loading = false);
+    final email = _identifierController.text.trim();
+    final password = _codeController.text.trim();
+    if (email.isEmpty || password.isEmpty) return;
 
-    Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const ExtendedOnboardingScreen(),
-        transitionsBuilder: (_, a, __, child) {
-          return FadeTransition(
+    setState(() => _loading = true);
+    try {
+      // Try sign-in first; if user doesn't exist, sign up.
+      try {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      } on AuthException catch (e) {
+        if (e.message.toLowerCase().contains('invalid') ||
+            e.message.toLowerCase().contains('not found')) {
+          await Supabase.instance.client.auth.signUp(
+            email: email,
+            password: password,
+            data: {'name': email.split('@').first},
+          );
+        } else {
+          rethrow;
+        }
+      }
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeScreen(),
+          transitionsBuilder: (_, a, __, child) => FadeTransition(
             opacity: a,
             child: SlideTransition(
               position: Tween<Offset>(
                 begin: const Offset(0, 0.05),
                 end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: a,
-                curve: Curves.easeOutQuart,
-              )),
+              ).animate(CurvedAnimation(parent: a, curve: Curves.easeOutQuart)),
               child: child,
             ),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-      (route) => false,
-    );
+          ),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Auth error: $e')),
+      );
+    }
   }
 
   void _backToIdentifier() {
@@ -157,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen>
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: Text(
-                        isCode ? 'Check your inbox' : 'Welcome to Nibbl',
+                        isCode ? 'Enter your password' : 'Welcome to Nibbl',
                         key: ValueKey(isCode),
                         textAlign: TextAlign.center,
                         style: context.appText.h1.copyWith(
@@ -176,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen>
                       duration: const Duration(milliseconds: 400),
                       child: Text(
                         isCode
-                            ? 'Enter the 6-digit code we just sent you.'
+                            ? 'Enter your password to sign in or create an account.'
                             : 'Sign in or create an account to get started.',
                         key: ValueKey('sub_$isCode'),
                         textAlign: TextAlign.center,
@@ -241,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               )
                             : Text(
-                                isCode ? 'Verify & Continue' : 'Send Code',
+                                isCode ? 'Continue' : 'Next',
                                 textAlign: TextAlign.center,
                                 style: context.appText.bodyStrong.copyWith(
                                   color: Colors.white,
@@ -386,7 +409,7 @@ class _LoginScreenState extends State<LoginScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'VERIFICATION CODE',
+            'PASSWORD',
             style: context.appText.caption.copyWith(
               fontWeight: FontWeight.w800,
               color: AppPalette.neutral400,
@@ -396,22 +419,24 @@ class _LoginScreenState extends State<LoginScreen>
           const SizedBox(height: 12),
           TextField(
             controller: _codeController,
-            keyboardType: TextInputType.number,
-            style: context.appText.h2.copyWith(
-              fontWeight: FontWeight.w900,
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+            style: context.appText.bodyStrong.copyWith(
               color: AppPalette.deepNavy,
-              letterSpacing: 8,
+              fontSize: 17,
             ),
-            textAlign: TextAlign.center,
-            maxLength: 6,
             decoration: InputDecoration(
-              hintText: '------',
-              hintStyle: context.appText.h2.copyWith(
-                color: AppPalette.neutral200,
-                letterSpacing: 8,
+              hintText: 'Enter your password',
+              hintStyle: context.appText.body.copyWith(
+                color: AppPalette.neutral400,
               ),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 4, right: 12),
+                child: Icon(Icons.lock_outline_rounded,
+                    color: AppPalette.neutral400, size: 22),
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
               border: InputBorder.none,
-              counterText: '',
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
@@ -433,7 +458,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: GestureDetector(
               onTap: _loading ? null : _backToIdentifier,
               child: Text(
-                'Change email/phone',
+                'Change email',
                 style: context.appText.smallStrong.copyWith(
                   color: AppPalette.primary,
                 ),
