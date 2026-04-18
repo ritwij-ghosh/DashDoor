@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
@@ -179,6 +180,37 @@ class _ExtendedOnboardingScreenState
 
       if (data.commitNights != null) {
         repo.saveContract(data.commitNights!);
+      }
+
+      // Persist to backend (fire-and-forget)
+      final profileUpdate = <String, dynamic>{};
+      if (data.dietaryRules.isNotEmpty) {
+        profileUpdate['dietary_preferences'] = data.dietaryRules;
+      }
+      if (data.mealVibes.isNotEmpty) {
+        profileUpdate['health_goals'] = data.mealVibes.join(', ');
+      }
+      final onboardingPayload = <String, dynamic>{};
+      if (data.squirrelName != null) {
+        onboardingPayload['mascot_name'] = data.squirrelName;
+      }
+      if (data.mealVibes.isNotEmpty) {
+        onboardingPayload['meal_vibes'] = data.mealVibes;
+      }
+      if (data.timeAvailableMin != null) {
+        onboardingPayload['time_available_min'] = data.timeAvailableMin;
+      }
+      if (data.manualPantryItems.isNotEmpty) {
+        onboardingPayload['pantry_items'] = data.manualPantryItems;
+      }
+      if (data.dietaryRules.isNotEmpty) {
+        onboardingPayload['dietary_rules'] = data.dietaryRules;
+      }
+      if (onboardingPayload.isNotEmpty) {
+        profileUpdate['onboarding_data'] = onboardingPayload;
+      }
+      if (profileUpdate.isNotEmpty) {
+        ApiService.updateProfile(profileUpdate).ignore();
       }
     } catch (_) {
       // Fire-and-forget

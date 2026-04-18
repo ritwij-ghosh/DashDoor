@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/mascot_widget.dart';
@@ -17,6 +18,7 @@ class SetupScreen extends ConsumerStatefulWidget {
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   final PageController _pageController = PageController();
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -32,10 +34,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       );
       ref.read(setupControllerProvider.notifier).setStep(1);
     } else {
+      if (_saving) return;
+      setState(() => _saving = true);
+      final setupState = ref.read(setupControllerProvider);
+      try {
+        await ApiService.updateProfile({
+          'dietary_preferences': setupState.selectedVibes.toList(),
+          'onboarding_data': {
+            'staples': setupState.selectedIngredientIds.toList(),
+            'time_limit_minutes':
+                int.tryParse(setupState.selectedTimeLimit ?? '15') ?? 15,
+            'vibes': setupState.selectedVibes.toList(),
+          },
+        });
+        // Fire-and-forget first recommendation generation
+        ApiService.generateRecommendation().ignore();
+      } catch (_) {}
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
   }

@@ -7,7 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/animations.dart';
 import '../../home/data/gamification_repository.dart';
 import '../state/onboarding_state.dart';
-import '../../home/presentation/placeholder_home_screen.dart';
+import '../../home/presentation/home_screen.dart';
 
 /// 3-Day Dinner Sprint — triggered when user dismisses paywall.
 /// Creates a commitment loop that leads back to a paywall offer on Day 3.
@@ -56,7 +56,7 @@ class _ThreeDayChallengeScreenState
   void _navigateToHome() {
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const PlaceholderHomeScreen(),
+        pageBuilder: (_, __, ___) => const HomeScreen(),
         transitionsBuilder: (_, a, __, child) {
           return FadeTransition(
             opacity: a,

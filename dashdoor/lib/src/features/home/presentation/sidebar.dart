@@ -17,7 +17,10 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
   List<Map<String, dynamic>> _recommendations = [];
   List<Map<String, dynamic>> _mealScores = [];
   Map<String, dynamic> _profile = {};
+  bool _calendarConnected = false;
+  Map<String, dynamic>? _currentLocation;
   bool _loading = false;
+  bool _generatingPlan = false;
 
   @override
   void initState() {
@@ -29,21 +32,54 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      final results = await Future.wait([
-        ApiService.getRecommendations(),
-        ApiService.getMealScores(),
-        ApiService.getProfile(),
-      ]);
+      // Start all fetches concurrently
+      final recsF = ApiService.getRecommendations();
+      final scoresF = ApiService.getMealScores();
+      final profileF = ApiService.getProfile();
+      final calF = ApiService.getCalendarStatus();
+      final locF = ApiService.getLocation();
+
+      final recs = await recsF;
+      final scores = await scoresF;
+      final profile = await profileF;
+
+      bool cal = false;
+      try {
+        cal = await calF;
+      } catch (_) {}
+
+      Map<String, dynamic>? loc;
+      try {
+        loc = await locF;
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
-          _recommendations = results[0] as List<Map<String, dynamic>>;
-          _mealScores = results[1] as List<Map<String, dynamic>>;
-          _profile = results[2] as Map<String, dynamic>;
+          _recommendations = recs;
+          _mealScores = scores;
+          _profile = profile;
+          _calendarConnected = cal;
+          _currentLocation = loc;
           _loading = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _generatePlan() async {
+    if (_generatingPlan) return;
+    setState(() => _generatingPlan = true);
+    try {
+      await ApiService.generateRecommendation(
+        location: _currentLocation?['city'] as String?,
+        travelContext: _currentLocation?['travel_note'] as String?,
+      );
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _generatingPlan = false);
+      _load();
     }
   }
 
@@ -64,7 +100,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Header
                   _SidebarHeader(
                     name: name,
                     email: user?.email,
@@ -75,16 +110,23 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   const SizedBox(height: 8),
 
                   // Upcoming Meal Plans
-                  const _SectionHeader(title: 'Upcoming Meal Plan'),
+                  _MealPlanHeader(
+                    onGenerate: _generatingPlan ? null : _generatePlan,
+                    isGenerating: _generatingPlan,
+                  ),
                   if (_loading)
                     const Padding(
                       padding: EdgeInsets.all(20),
                       child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                     )
                   else if (_recommendations.isEmpty)
-                    const _EmptyState(
-                      icon: Icons.restaurant_menu_rounded,
-                      message: 'No plan yet — ask the AI to plan your meals!',
+                    Column(
+                      children: [
+                        const _EmptyState(
+                          icon: Icons.restaurant_menu_rounded,
+                          message: 'No plan yet — tap Generate to plan your meals!',
+                        ),
+                      ],
                     )
                   else
                     ..._buildMealCards(),
@@ -108,13 +150,19 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   _IntegrationTile(
                     icon: Icons.calendar_month_rounded,
                     title: 'Google Calendar',
-                    subtitle: 'Schedule-aware meal timing',
+                    subtitle: _calendarConnected
+                        ? 'Connected — schedule-aware timing active'
+                        : 'Connect for schedule-aware meal timing',
+                    isConnected: _calendarConnected,
                     onTap: () => _connectCalendar(context),
                   ),
                   _IntegrationTile(
                     icon: Icons.location_on_rounded,
-                    title: 'Set Location',
-                    subtitle: 'For nearby restaurant suggestions',
+                    title: 'Location',
+                    subtitle: _currentLocation != null
+                        ? _currentLocation!['city'] as String? ?? 'Set'
+                        : 'Set for nearby restaurant suggestions',
+                    isConnected: _currentLocation != null,
                     onTap: () => _setLocation(context),
                   ),
 
@@ -168,18 +216,21 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
   }
 
   List<Widget> _buildScoreItems() {
-    return _mealScores
-        .take(8)
-        .map((s) => _PastMealItem(score: s))
-        .toList();
+    return _mealScores.take(8).map((s) => _PastMealItem(score: s)).toList();
   }
 
   Future<void> _connectCalendar(BuildContext ctx) async {
+    if (_calendarConnected) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Google Calendar is already connected.')),
+      );
+      return;
+    }
     try {
       final data = await ApiService.connectCalendar();
       final url = data['oauth_url'] as String?;
       if (url != null && ctx.mounted) {
-        showDialog(
+        await showDialog(
           context: ctx,
           builder: (c) => AlertDialog(
             title: const Text('Connect Google Calendar'),
@@ -189,18 +240,25 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(c),
-                child: const Text('Close'),
+                child: const Text('Done'),
               ),
             ],
           ),
         );
+        // Reload to pick up connection status
+        _load();
       }
     } catch (_) {}
   }
 
   Future<void> _setLocation(BuildContext ctx) async {
-    final cityCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
+    final cityCtrl = TextEditingController(
+      text: _currentLocation?['city'] as String? ?? '',
+    );
+    final noteCtrl = TextEditingController(
+      text: _currentLocation?['travel_note'] as String? ?? '',
+    );
+    bool saved = false;
     await showDialog(
       context: ctx,
       builder: (c) => AlertDialog(
@@ -211,6 +269,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
             TextField(
               controller: cityCtrl,
               decoration: const InputDecoration(labelText: 'City'),
+              textCapitalization: TextCapitalization.words,
             ),
             TextField(
               controller: noteCtrl,
@@ -235,6 +294,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       ? null
                       : noteCtrl.text.trim(),
                 );
+                saved = true;
               }
               if (c.mounted) Navigator.pop(c);
             },
@@ -243,6 +303,11 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         ],
       ),
     );
+    if (saved) {
+      // Generate a fresh meal plan with the new location, then reload
+      ApiService.generateRecommendation(location: cityCtrl.text.trim()).ignore();
+      _load();
+    }
   }
 }
 
@@ -331,6 +396,61 @@ class _SidebarHeader extends StatelessWidget {
   }
 }
 
+class _MealPlanHeader extends StatelessWidget {
+  final VoidCallback? onGenerate;
+  final bool isGenerating;
+
+  const _MealPlanHeader({this.onGenerate, required this.isGenerating});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'UPCOMING MEAL PLAN',
+              style: context.appText.caption.copyWith(
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w800,
+                color: AppPalette.neutral500,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onGenerate,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isGenerating
+                    ? AppPalette.neutral200
+                    : AppPalette.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: isGenerating
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Generate',
+                      style: context.appText.caption.copyWith(
+                        color: AppPalette.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MealPlanCard extends StatelessWidget {
   final Map<String, dynamic> meal;
   final String? recommendationId;
@@ -391,6 +511,17 @@ class _MealPlanCard extends StatelessWidget {
               style: context.appText.small.copyWith(
                 color: AppPalette.neutral500,
                 fontSize: 12,
+              ),
+            ),
+          ],
+          if (meal['order_method'] != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              meal['order_method'] as String,
+              style: context.appText.caption.copyWith(
+                color: AppPalette.successMint,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
               ),
             ),
           ],
@@ -573,12 +704,14 @@ class _IntegrationTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isConnected;
 
   const _IntegrationTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isConnected = false,
   });
 
   @override
@@ -591,17 +724,27 @@ class _IntegrationTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppPalette.surfaceWhite,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppPalette.border),
+          border: Border.all(
+            color: isConnected
+                ? AppPalette.successMint.withValues(alpha: 0.4)
+                : AppPalette.border,
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppPalette.primary.withValues(alpha: 0.08),
+                color: isConnected
+                    ? AppPalette.successMint.withValues(alpha: 0.12)
+                    : AppPalette.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppPalette.primary, size: 20),
+              child: Icon(
+                icon,
+                color: isConnected ? AppPalette.successMint : AppPalette.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -612,15 +755,21 @@ class _IntegrationTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: context.appText.caption.copyWith(
-                      color: AppPalette.neutral500,
+                      color: isConnected
+                          ? AppPalette.successMint
+                          : AppPalette.neutral500,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppPalette.neutral400,
+            Icon(
+              isConnected
+                  ? Icons.check_circle_rounded
+                  : Icons.chevron_right_rounded,
+              color: isConnected
+                  ? AppPalette.successMint
+                  : AppPalette.neutral400,
               size: 20,
             ),
           ],
