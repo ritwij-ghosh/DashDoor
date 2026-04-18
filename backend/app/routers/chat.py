@@ -8,6 +8,7 @@ from app.database import get_supabase
 from app.services.ai_service import generate_chat_response
 from app.services.memory_service import add_memory, search_memories
 from app.services.calendar_service import fetch_events_for_entity
+from app.services.restaurant_service import search_nearby_restaurants
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -60,6 +61,13 @@ async def send_message(
     if profile.get("calendar_connected") and entity_id:
         calendar_events = fetch_events_for_entity(entity_id, hours=12)
 
+    nearby_restaurants: list[dict] = []
+    _food_keywords = {"eat", "food", "restaurant", "meal", "lunch", "dinner", "breakfast", "order", "hungry", "near", "local", "grab"}
+    if location and any(kw in request.message.lower() for kw in _food_keywords):
+        city = (location or {}).get("city", "")
+        if city:
+            nearby_restaurants = await search_nearby_restaurants(city)
+
     response_text = await generate_chat_response(
         message=request.message,
         history=history,
@@ -68,6 +76,7 @@ async def send_message(
         calendar_events=calendar_events,
         memories=memories,
         recent_scores=recent_scores,
+        nearby_restaurants=nearby_restaurants,
     )
 
     now = datetime.datetime.utcnow().isoformat()

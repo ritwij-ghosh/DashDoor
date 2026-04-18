@@ -5,6 +5,7 @@ from supabase import Client
 
 from app.services.ai_service import generate_meal_plan
 from app.services.calendar_service import fetch_events_for_entity
+from app.services.restaurant_service import search_nearby_restaurants
 
 
 async def generate_recommendations_for_user(
@@ -27,12 +28,15 @@ async def generate_recommendations_for_user(
     if profile.get("calendar_connected") and entity_id:
         events = fetch_events_for_entity(entity_id, hours=12)
 
+    nearby_restaurants = await search_nearby_restaurants(location)
+
     now = datetime.utcnow()
     plan = await generate_meal_plan(
         events=events,
         location=location,
         travel_context=travel_context,
         current_time=now,
+        nearby_restaurants=nearby_restaurants,
     )
 
     rec_id = str(uuid.uuid4())

@@ -32,6 +32,7 @@ async def generate_chat_response(
     calendar_events: list[dict],
     memories: list[str],
     recent_scores: list[dict],
+    nearby_restaurants: list[dict] | None = None,
 ) -> str:
     ctx: list[str] = []
 
@@ -73,6 +74,18 @@ async def generate_chat_response(
         for m in memories[:3]:
             ctx.append(f"  • {m}")
 
+    if nearby_restaurants:
+        ctx.append("Nearby restaurants (verified local search):")
+        for r in nearby_restaurants[:5]:
+            line = f"  • {r['name']}"
+            if r.get("cuisine"):
+                line += f" ({r['cuisine']})"
+            if r.get("rating"):
+                line += f" — {r['rating']}★"
+            if r.get("address"):
+                line += f" @ {r['address'][:60]}"
+            ctx.append(line)
+
     msgs = [{"role": h["role"], "content": h["content"]} for h in history[-10:]]
     msgs.append({"role": "user", "content": message})
 
@@ -93,6 +106,7 @@ async def generate_meal_plan(
     location: str,
     travel_context: Optional[str],
     current_time: datetime,
+    nearby_restaurants: list[dict] | None = None,
 ) -> dict:
     events_block = ""
     if events:
@@ -106,12 +120,31 @@ async def generate_meal_plan(
     else:
         events_block = "No calendar events."
 
+    restaurants_block = ""
+    if nearby_restaurants:
+        lines = []
+        for r in nearby_restaurants[:8]:
+            line = f"  - {r['name']}"
+            if r.get("cuisine"):
+                line += f" ({r['cuisine']})"
+            if r.get("rating"):
+                line += f" — rated {r['rating']}"
+            if r.get("address"):
+                line += f" @ {r['address'][:80]}"
+            lines.append(line)
+        restaurants_block = (
+            "Nearby restaurants (verified local search — prefer these over generic suggestions):\n"
+            + "\n".join(lines)
+            + "\n"
+        )
+
     prompt = f"""Current time: {current_time.strftime('%A, %B %d %Y at %I:%M %p')}
 Location: {location or 'Unknown'}
 {f'Travel: {travel_context}' if travel_context else ''}
 
 {events_block}
 
+{restaurants_block}
 Return JSON matching this schema exactly:
 {{
   "window_analyzed": "e.g. 8am–8pm",
@@ -123,6 +156,7 @@ Return JSON matching this schema exactly:
       "why": "One sentence tied to their schedule",
       "calories": 600,
       "order_method": "DoorDash / walk-in / prep",
+      "restaurant_name": "Actual restaurant name if ordering out, else null",
       "tags": ["high-protein", "quick"]
     }}
   ],
@@ -131,9 +165,10 @@ Return JSON matching this schema exactly:
 
 Include 3-5 recommendations."""
 
+    max_tokens = 2000 if nearby_restaurants else 1500
     resp = await client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1500,
+        max_tokens=max_tokens,
         system=[{"type": "text", "text": _PLAN_SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": prompt}],
     )

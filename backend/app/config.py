@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     COMPOSIO_API_KEY: str = "ak_uWdQGwzssrkC9YtNDoDm"
     ANTHROPIC_API_KEY: str = ""
     SUPERMEMORY_API_KEY: str = ""
+    SERPER_API_KEY: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
