@@ -3,7 +3,7 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    COMPOSIO_API_KEY: str = "ak_uWdQGwzssrkC9YtNDoDm"
+    COMPOSIO_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     SECRET_KEY: str = "changeme-in-production-use-a-long-random-string"
     DATABASE_URL: str = "sqlite+aiosqlite:///./healthy_autopilot.db"
