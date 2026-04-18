@@ -1,10 +1,39 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from jose import JWTError, jwt
 from app.config import settings
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
+ALGORITHM = "HS256"
+
+
+def _get_calendar_token_secret() -> str:
+    secret = settings.SECRET_KEY.strip()
+    if len(secret) < 32:
+        raise ValueError("SECRET_KEY must be configured (32+ characters)")
+    return secret
+
+
+def _create_calendar_connect_token(user_id: str) -> tuple[str, datetime]:
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    payload = {
+        "sub": user_id,
+        "type": "calendar_connect",
+        "exp": expires_at,
+    }
+    token = jwt.encode(payload, _get_calendar_token_secret(), algorithm=ALGORITHM)
+    return token, expires_at
+
+
+def _validate_calendar_connect_token(user_id: str, connect_token: str) -> bool:
+    try:
+        payload = jwt.decode(connect_token, _get_calendar_token_secret(), algorithms=[ALGORITHM])
+        return payload.get("sub") == user_id and payload.get("type") == "calendar_connect"
+    except (JWTError, ValueError):
+        return False
 
 
 def _get_oauth_url_sync(entity_id: str) -> dict:
@@ -68,11 +97,12 @@ def _fetch_events_sync(entity_id: str, hours: int) -> list[dict]:
     return events
 
 
-async def get_calendar_oauth_url(user: User, db: AsyncSession) -> dict:
+async def get_calendar_oauth_url(user: User) -> dict:
     entity_id = str(user.id)
     result = await asyncio.to_thread(_get_oauth_url_sync, entity_id)
+    connect_token, connect_token_expires_at = _create_calendar_connect_token(entity_id)
 
-    # Persist entity_id and mark as connecting
+    # Persist entity_id and one-time confirmation token for authenticated mobile confirm step.
     from sqlalchemy import update
     from app.database import AsyncSessionLocal
 
@@ -84,7 +114,11 @@ async def get_calendar_oauth_url(user: User, db: AsyncSession) -> dict:
         )
         await session.commit()
 
-    return result
+    return {
+        **result,
+        "connect_token": connect_token,
+        "connect_token_expires_at": connect_token_expires_at.isoformat(),
+    }
 
 
 async def get_upcoming_events(user: User, hours: int = 12) -> list[dict]:
@@ -94,18 +128,26 @@ async def get_upcoming_events(user: User, hours: int = 12) -> list[dict]:
     try:
         return await asyncio.to_thread(_fetch_events_sync, entity_id, hours)
     except Exception:
+        logger.exception("Failed to fetch calendar events for user_id=%s", user.id)
         return []
 
 
-async def mark_calendar_connected(user_id: str) -> None:
-    """Called after the user completes OAuth. Marks calendar as connected."""
-    from sqlalchemy import update
+async def mark_calendar_connected(user_id: str, connect_token: str) -> bool:
+    """Marks calendar as connected if the signed token is valid for this user."""
+    from sqlalchemy import select
     from app.database import AsyncSessionLocal
 
+    if not _validate_calendar_connect_token(user_id, connect_token):
+        return False
+
     async with AsyncSessionLocal() as session:
-        await session.execute(
-            update(User)
-            .where(User.id == user_id)
-            .values(calendar_connected=True)
+        result = await session.execute(
+            select(User).where(User.id == user_id)
         )
+        user = result.scalar_one_or_none()
+        if user is None:
+            return False
+
+        user.calendar_connected = True
         await session.commit()
+        return True

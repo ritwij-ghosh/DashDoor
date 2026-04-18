@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Any
 
 
@@ -9,7 +9,7 @@ class MealTemplateCreate(BaseModel):
     restaurant_name: str | None = None
     order_url: str | None = None
     calories: int | None = None
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
 
 
 class MealTemplateUpdate(BaseModel):

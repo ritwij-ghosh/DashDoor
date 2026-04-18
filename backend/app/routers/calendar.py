@@ -1,9 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.services.calendar_service import (
@@ -18,14 +15,16 @@ router = APIRouter(prefix="/calendar", tags=["calendar"])
 @router.get("/connect")
 async def connect_calendar(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """
-    Returns a Composio OAuth URL for the current user to connect Google Calendar.
-    Saves the entity_id to the user record.
+    Returns a Composio OAuth URL plus a short-lived confirmation token.
+
+    Mobile flow:
+    1) Open oauth_url in an external browser/webview.
+    2) After auth success, call POST /calendar/confirm with connect_token.
     """
     try:
-        result = await get_calendar_oauth_url(current_user, db)
+        result = await get_calendar_oauth_url(current_user)
         return result
     except Exception as e:
         raise HTTPException(
@@ -42,16 +41,22 @@ async def calendar_status(
     return {"connected": current_user.calendar_connected}
 
 
-@router.get("/callback")
-async def calendar_oauth_callback(
-    entity_id: str = Query(..., description="The Composio entity ID (user.id)"),
+@router.post("/confirm")
+async def confirm_calendar_connection(
+    connect_token: str,
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """
-    Composio redirects here after the user authorizes Google Calendar.
-    Marks the user's calendar as connected.
+    Marks calendar as connected for the authenticated user.
+    Requires the one-time connect_token previously returned by /calendar/connect.
     """
-    await mark_calendar_connected(entity_id)
-    return {"message": "Google Calendar connected successfully.", "entity_id": entity_id}
+    is_connected = await mark_calendar_connected(current_user.id, connect_token)
+    if not is_connected:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired calendar connect token.",
+        )
+    return {"message": "Google Calendar connected successfully.", "connected": True}
 
 
 @router.get("/events")
@@ -60,7 +65,7 @@ async def list_calendar_events(
 ) -> list[dict]:
     """
     Fetches upcoming events for the next 12 hours from Google Calendar via Composio.
-    Returns [] if calendar not connected or on any error.
+    Returns [] if calendar is not connected or if upstream call fails.
     """
     events = await get_upcoming_events(current_user, hours=12)
     return events

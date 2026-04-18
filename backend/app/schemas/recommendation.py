@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RecommendationRequest(BaseModel):
@@ -17,7 +17,7 @@ class MealSuggestion(BaseModel):
     order_url: str | None = None
     calories: int | None = None
     order_method: str | None = None
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
 
 
 class RecommendationResponse(BaseModel):

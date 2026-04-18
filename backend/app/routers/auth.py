@@ -22,6 +22,16 @@ security = HTTPBearer()
 ALGORITHM = "HS256"
 
 
+def get_signing_secret() -> str:
+    secret = settings.SECRET_KEY.strip()
+    if len(secret) < 32:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication is not configured. Set a strong SECRET_KEY in .env.",
+        )
+    return secret
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -33,7 +43,7 @@ def hash_password(password: str) -> str:
 def create_access_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": user_id, "exp": expire}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, get_signing_secret(), algorithm=ALGORITHM)
 
 
 async def get_current_user(
@@ -47,7 +57,7 @@ async def get_current_user(
     )
     try:
         token = credentials.credentials
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, get_signing_secret(), algorithms=[ALGORITHM])
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
